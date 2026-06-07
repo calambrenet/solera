@@ -90,6 +90,16 @@ solera/
 
 Releases use `YY.MM` (e.g. `26.04`). The internal build id is separate and appears in the image name (`solera-26.04-build-20260607-180000`). Each release is pinned to an Arch Linux Archive snapshot for reproducibility.
 
+## Contributing
+
+Solera is open source and contributions are welcome — bug reports, feature
+requests and pull requests. See [CONTRIBUTING.md](CONTRIBUTING.md) for the
+workflow and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for community standards.
+Security issues: see [SECURITY.md](SECURITY.md) (report privately, not in a
+public issue).
+
+Website: [www.soleralinux.org](https://www.soleralinux.org)
+
 ## License
 
-GPL-3.0-or-later, matching upstream Arch / Arkane.
+[GPL-3.0-or-later](LICENSE), matching upstream Arch / Arkane.

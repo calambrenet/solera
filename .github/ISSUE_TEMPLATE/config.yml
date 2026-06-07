@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/calambrenet/solera/security/advisories/new
+    about: Report security issues privately. Do not open a public issue.
+  - name: Project website
+    url: https://www.soleralinux.org
+    about: Solera Linux homepage.
