@@ -1,0 +1,321 @@
+# Maintainer: calambrenet <calambrenet@gmail.com>
+#
+# solera-meta: Metapaquete que declara TODO lo que Solera incluye.
+# Sin contenido propio: solo dependencias.
+# Instalar solera-meta = instalar Solera entera.
+#
+# Cambiar la lista de software de Solera = editar este PKGBUILD.
+
+pkgname=solera-meta
+pkgver=26.04
+pkgrel=15
+pkgdesc='Solera Linux meta-package: declares every package that composes Solera'
+arch=('any')
+url='https://github.com/calambrenet/solera'
+license=('GPL-3.0-or-later')
+
+# Cuando se publique una nueva release de Solera, basta con bumpear pkgver
+# (YY.MM) y pkgrel se reinicia a 1. Cambios entre releases (parches de
+# seguridad retroportados) suben pkgrel sin tocar pkgver.
+
+depends=(
+    # ---- Sistema base y kernel ---------------------------------------------
+    # NOTA: 'base', 'linux', 'linux-firmware', 'sudo' los instala arkdep en
+    # bootstrap.list directamente. Los listamos también aquí para que
+    # solera-meta sea autosuficiente si se instala fuera de la receta.
+    'base'
+    'linux'
+    'linux-firmware'
+    'sudo'
+    'amd-ucode'
+    'intel-ucode'
+
+    # ---- Filesystem y arranque ---------------------------------------------
+    'btrfs-progs'        # arkdep depende de btrfs
+    'dosfstools'         # ESP (FAT32)
+    'efibootmgr'
+    'dracut'             # initramfs (arkdep usa dracut, no mkinitcpio)
+    'plymouth'           # boot splash (con tema de Solera vía solera-config)
+    # zram swap lo configura solera-config con un servicio propio. No usamos
+    # zram-generator por ahora: en VM generaba una espera por /dev/zram0.
+    # systemd-boot viene en 'systemd' (instalado por base)
+
+    # ---- Motor de despliegue (Solera lo redistribuye desde upstream) -------
+    'arkdep'
+    'solera-keyring'     # keyring del repo pacman de Solera
+
+    # ---- Red ---------------------------------------------------------------
+    'networkmanager'
+    'network-manager-applet'
+    'wpa_supplicant'
+
+    # ---- Bluetooth ---------------------------------------------------------
+    'bluez'
+    'bluez-utils'
+
+    # ---- Audio (PipeWire completo; PulseAudio nativo descartado) -----------
+    'pipewire'
+    'pipewire-alsa'
+    'pipewire-audio'
+    'pipewire-jack'
+    'pipewire-pulse'
+    'wireplumber'
+    'gst-plugin-pipewire'
+    'gst-plugins-base'
+    'gst-plugins-good'
+    'gst-plugins-bad'    # codecs adicionales (explícito; antes solo entraba transitivo)
+    'gst-plugins-ugly'   # codecs con licencia restringida (mp3 legacy, etc.)
+    'gst-libav'          # decoders FFmpeg (H.264/H.265/AAC) — sin esto WebKitGTK/Epiphany no reproduce vídeo
+    'sof-firmware'
+
+    # ---- Gráficos (multi-vendor, mantiene la imagen portátil) --------------
+    'mesa'
+    'intel-media-driver'
+    'libva-intel-driver'
+    'libva-mesa-driver'
+    'vulkan-intel'
+    'vulkan-nouveau'
+    'vulkan-radeon'
+    'vulkan-mesa-layers'
+    # xf86-video-amdgpu/ati/nouveau retirados: en GNOME 50 / Wayland los DDX
+    # de Xorg ya no se usan. Si en el futuro necesitamos Xorg como fallback,
+    # los reintroducimos junto con xorg-server.
+
+    # ---- Gaming: gamemode ---------------------------------------------------
+    # Daemon de Feral Interactive que, mientras un juego corre, sube el CPU
+    # governor a performance, ajusta scheduler I/O, sube power-cap GPU y
+    # bloquea screensaver. Revierte al cerrar el juego. lib32-gamemode es
+    # imprescindible para que el Flatpak de Steam (sandbox 32-bit) lo vea.
+    # Steam y mangohud quedan a discreción del usuario (Flatpak / brew).
+    'gamemode'
+    'lib32-gamemode'
+
+    # ---- Firewall, hardware, monitoring ------------------------------------
+    'ufw'                # firewall (habilitado por defecto vía solera-config)
+    'apparmor'           # MAC layer (relevante para empresa)
+    'smartmontools'      # SMART
+    'fwupd'              # firmware updates (LVFS)
+    'power-profiles-daemon'
+    'switcheroo-control'
+    'tpm2-tools'         # soporte TPM2 (relevante para flotas empresariales)
+    'tpm2-tss'
+
+    # ---- Display manager y escritorio --------------------------------------
+    'gdm'
+    'gnome-shell'
+    'gnome-initial-setup'        # wizard de bienvenida al primer arranque;
+                                  # GDM lo dispara cuando no hay usuarios
+                                  # con UID >= 1000. Sin él, GDM cae a un
+                                  # login normal que pide username sin
+                                  # opción para crear el primer usuario.
+    'mutter'
+    'gnome-control-center'
+    'gnome-settings-daemon'
+    'gnome-session'
+    'gnome-keyring'
+    'gnome-tweaks'
+    'gnome-browser-connector'    # para extensions.gnome.org
+    'gnome-software'
+    'gnome-system-monitor'
+    'gnome-disk-utility'
+    'gnome-backgrounds'
+    'gnome-menus'
+    'gnome-console'
+    'gnome-text-editor'
+    'gnome-calculator'
+    'gnome-calendar'
+    'gnome-clocks'
+    'gnome-characters'
+    'gnome-color-manager'
+    'gnome-connections'
+    'gnome-contacts'
+    'gnome-font-viewer'
+    'gnome-logs'
+    'gnome-maps'
+    'gnome-music'
+    'gnome-remote-desktop'
+    'gnome-user-share'
+    'gnome-weather'
+    # 'gnome-tour'  # quitado: el tour "Welcome to GNOME" interrumpe el
+                    # primer login y no añade valor a usuarios familiarizados
+                    # con GNOME. Si alguien lo necesita, `arkdep layer gnome-tour`.
+    'gnome-user-docs'
+    'orca'
+    'malcontent'
+    'baobab'
+    'decibels'
+    'epiphany'
+    'evolution-data-server'    # backend para gnome-calendar / contactos
+    'grilo-plugins'
+    'gst-thumbnailers'
+    'gvfs'
+    'gvfs-afc'
+    'gvfs-dnssd'
+    'gvfs-goa'
+    'gvfs-gphoto2'
+    'gvfs-mtp'
+    'gvfs-nfs'
+    'gvfs-smb'
+    'gvfs-wsdd'
+    'loupe'
+    'nautilus'
+    'papers'
+    'rygel'
+    'showtime'
+    'simple-scan'
+    'snapshot'
+    'sushi'
+    'tecla'
+    'xdg-desktop-portal-gnome'
+    'xdg-desktop-portal-gtk'     # portales para apps GTK no-GNOME (Flatpak)
+    'xdg-user-dirs'
+    'xdg-user-dirs-gtk'
+    'xdg-utils'
+    'yelp'
+
+    # ---- Extensiones GNOME por defecto -------------------------------------
+    'gnome-shell-extension-dash-to-dock'
+    'gnome-shell-extension-blur-my-shell'
+    'gnome-shell-extension-compiz-alike-magic-lamp-effect'
+
+    # ---- Flatpak / Flathub -------------------------------------------------
+    'flatpak'
+    # La preconfiguración de Flathub y el set inicial de apps los aporta
+    # solera-config (servicio first-boot).
+
+    # ---- Stack de contenedores rootless (base de Distrobox) ----------------
+    'podman'
+    'buildah'
+    'skopeo'
+    'fuse-overlayfs'
+    'crun'
+    'passt'
+    'slirp4netns'
+    'distrobox'
+
+    # ---- Shell por defecto: zsh + powerlevel10k ----------------------------
+    # /etc/default/useradd se configura desde solera-config (factory) para
+    # que gnome-initial-setup cree al usuario con login shell /usr/bin/zsh.
+    # .zshrc y .p10k.zsh se siembran desde /etc/skel.
+    'zsh'
+    'zsh-completions'
+    'zsh-autosuggestions'
+    'zsh-syntax-highlighting'
+    'zsh-history-substring-search'
+    'zsh-theme-powerlevel10k'
+
+    # ---- Utilidades de usuario / consola -----------------------------------
+    'bash-completion'
+    'curl'
+    'wget'
+    'git'
+    'nano'
+    'vim'
+    'ex-vi-compat'       # provee /usr/bin/vi (BSD vi clásico vía vim compat)
+    'less'               # paginador; git lo usa para log/diff/show
+    'htop'
+    'man-db'
+    'man-pages'
+    'tree'
+    'which'
+    'openssh'
+    'tmux'
+    'screen'
+    'rsync'
+    'sshfs'              # montar SSH como FUSE
+
+    # ---- Modernización de coreutils ---------------------------------------
+    'ripgrep'
+    'fd'
+    'fzf'
+    'tldr'
+    'jq'
+    'yq'                 # wrapper Python sobre jq para YAML/XML/TOML
+
+    # ---- Diagnóstico de red e introspección de hardware --------------------
+    'bind'               # dig, nslookup, host
+    'whois'
+    'traceroute'
+    'mtr'
+    'iputils'            # ping, tracepath (normalmente ya vía base, explícito)
+    'usbutils'           # lsusb
+    'pciutils'           # lspci
+    'dmidecode'
+    'inxi'
+    'lsof'
+    'strace'
+    'ltrace'
+    'iotop'
+    'iftop'
+    'nload'
+
+    # ---- Archivos y compresión --------------------------------------------
+    'unzip'
+    'zip'
+    '7zip'               # Arch renombró 'p7zip' → '7zip' (provee /usr/bin/7z)
+    'unrar'
+
+    # ---- VPN y conectividad corporativa -----------------------------------
+    'networkmanager-openvpn'
+    'networkmanager-openconnect'    # Cisco AnyConnect, GlobalProtect
+    'networkmanager-l2tp'
+    'wireguard-tools'
+    'openvpn'
+
+    # ---- Container ecosystem ampliado -------------------------------------
+    'podman-docker'      # provee /usr/bin/docker → podman
+    'docker-compose'
+
+    # ---- Impresión y escaneo (CUPS) ---------------------------------------
+    'cups'
+    'cups-pdf'
+    'cups-filters'
+    'system-config-printer'
+
+    # ---- Filesystems en red (NAS, SMB de Windows/AD) ----------------------
+    'cifs-utils'
+    'nfs-utils'
+
+    # ---- Identidad corporativa / AD ---------------------------------------
+    'sssd'
+    'samba'              # cliente; provee 'net ads join' para Active Directory
+    # TODO: 'realmd' — NO está en [core]/[extra], solo en AUR. Sin él, AD-join
+    # se hace manualmente con 'net ads join'. Para tener UX completa hay que
+    # añadir packages/realmd/PKGBUILD (mirror AUR) en una próxima iteración.
+
+    # ---- Fuentes para programar / interop ofimática ------------------------
+    'ttf-fira-code'
+    'ttf-jetbrains-mono'
+    'ttf-cascadia-code'
+    'ttf-hack'
+    'ttf-meslo-nerd'     # fuente del prompt p10k (Nerd Font con glifos powerline)
+    'ttf-liberation'     # equivalentes Arial/Times para .docx
+    'ttf-dejavu'         # clásicos UNIX
+
+    # ---- Fuentes -----------------------------------------------------------
+    'noto-fonts'
+    'noto-fonts-cjk'
+    'noto-fonts-emoji'
+    'terminus-font'
+
+    # ---- Configuración propia de Solera ------------------------------------
+    'solera-config'
+
+    # ---- Soporte para VMs (transparente; no estorba en bare metal) ---------
+    'spice-vdagent'
+    'qemu-guest-agent'
+    'virtualbox-guest-utils-nox'
+
+    # ---- Locales completos (el instalador elige el final) ------------------
+    'glibc-locales'
+
+    # ---- NSS extrausers (necesario por la división passwd /etc + /usr/lib)
+    # arkdep mueve la base de usuarios del sistema a /usr/lib/passwd|group|shadow
+    # y deja /etc/passwd|group|shadow para los usuarios locales.
+    'libnss-extrausers'
+)
+
+package() {
+    # Metapaquete: sin payload.
+    :
+}

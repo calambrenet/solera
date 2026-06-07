@@ -1,0 +1,47 @@
+# Maintainer: calambrenet <calambrenet@gmail.com>
+#
+# solera-keyring: PGP keyring del repositorio pacman de Solera.
+#
+# Este paquete despliega en /usr/share/pacman/keyrings/ los archivos:
+#   solera.gpg         lista de claves públicas
+#   solera-trusted     fingerprints confiados
+#   solera-revoked     fingerprints revocados
+#
+# Tras instalarlo, pacman-key --populate solera importa las claves al
+# llavero de pacman, permitiendo verificar paquetes firmados por Solera.
+#
+# Cómo poblar el contenido real:
+#   1) Genera el par de claves de firma del repo (offline, fuera del CI).
+#   2) Exporta la pública:   gpg --export FPR > keys/solera.gpg
+#   3) Apunta su fingerprint en keys/solera-trusted (1 línea, ':4:' al final).
+#   4) Sube la pública al keyserver (opcional pero recomendable).
+#   5) Sube SOLO la pública a este repo. La privada vive en un GitHub Secret.
+
+pkgname=solera-keyring
+pkgver=0.1.0
+pkgrel=2
+pkgdesc='Solera Linux PGP keyring'
+arch=('any')
+url='https://github.com/calambrenet/solera'
+license=('GPL-3.0-or-later')
+install="${pkgname}.install"
+
+# Los archivos de claves los aporta el propio repo en keys/ junto al PKGBUILD.
+source=()
+sha256sums=()
+
+package() {
+    cd "$startdir"
+
+    install -d "$pkgdir/usr/share/pacman/keyrings"
+    for f in solera.gpg solera-trusted solera-revoked; do
+        if [[ -f "keys/$f" ]]; then
+            install -m644 "keys/$f" "$pkgdir/usr/share/pacman/keyrings/$f"
+        else
+            # Marcador para que el build no falle antes de que se genere la
+            # clave real. CI verifica que estos archivos existen antes de
+            # publicar a producción.
+            install -m644 /dev/null "$pkgdir/usr/share/pacman/keyrings/$f"
+        fi
+    done
+}

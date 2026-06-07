@@ -1,0 +1,27 @@
+# Bootstrap stage — paquetes que pacstrap instala en la subvolume vacía.
+# Aquí solo lo imprescindible para tener un sistema mínimo arrancable y para
+# que la segunda fase (arch-chroot pacman -S) pueda actuar.
+# La lista total de Solera vive en solera-meta (segunda fase).
+
+base
+linux
+linux-firmware
+sudo
+
+# Microcódigo de CPU (la receta lo mueve a /usr/lib en post-process)
+amd-ucode
+intel-ucode
+
+# Filesystem y arranque
+btrfs-progs
+dosfstools
+efibootmgr
+
+# Initramfs (arkdep usa dracut)
+dracut
+
+# dbus-broker en lugar de dbus-daemon (modern default)
+dbus-broker-units
+
+# Llavero de Solera (necesario para verificar firmas del repo [solera])
+solera-keyring

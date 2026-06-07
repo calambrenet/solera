@@ -1,0 +1,46 @@
+# Maintainer: calambrenet <calambrenet@gmail.com>
+#
+# gnome-shell-extension-compiz-alike-magic-lamp-effect — extensión por
+# defecto de Solera. Efecto "magic lamp" tipo Compiz al minimizar/
+# restaurar ventanas, va alineado con el look polish de Solera.
+#
+# Empaquetamos a nivel de sistema (mismo patrón que dash-to-dock y
+# blur-my-shell), no por usuario. Activación por defecto la pone
+# solera-config en el dconf override 02-shell.
+#
+# Origen: extensions.gnome.org. El repo upstream no usa tags formales
+# (HEAD declara version=25 a fecha de hoy, pero el último publicado en
+# EGO es v24); preferimos el zip oficial de EGO porque es lo que
+# realmente se distribuye y es deterministic.
+
+pkgname=gnome-shell-extension-compiz-alike-magic-lamp-effect
+pkgver=24
+pkgrel=2
+pkgdesc='Magic lamp effect for window minimize/restore (system-wide install for Solera)'
+arch=('any')
+url='https://github.com/hermes83/compiz-alike-magic-lamp-effect'
+license=('GPL-3.0-or-later')
+depends=('gnome-shell')
+makedepends=('glib2')
+_uuid='compiz-alike-magic-lamp-effect@hermes83.github.com'
+_ego_slug='compiz-alike-magic-lamp-effecthermes83.github.com'
+source=("$pkgname-$pkgver.zip::https://extensions.gnome.org/extension-data/$_ego_slug.v$pkgver.shell-extension.zip")
+sha256sums=('SKIP')
+
+package() {
+    local destdir="$pkgdir/usr/share/gnome-shell/extensions/$_uuid"
+    install -d "$destdir"
+
+    # El zip de EGO trae todos los archivos en la raíz del zip,
+    # listos para extraer directamente al extension dir.
+    bsdtar -xf "$srcdir/$pkgname-$pkgver.zip" -C "$destdir"
+
+    # El zip viene con permisos restrictivos en algunos archivos
+    # (metadata.json = 0600, schemas/ = 0700) que bsdtar preserva, y
+    # eso impide a gnome-shell leerlos en runtime ("Permiso denegado
+    # cargando metadata.json"). Normalizar a 0755/0644 estándar.
+    chmod -R u=rwX,go=rX "$destdir"
+
+    # Compilar schema (el zip trae el .xml pero no el .compiled).
+    glib-compile-schemas "$destdir/schemas/"
+}

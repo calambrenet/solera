@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Solera Welcome
+GenericName=Bienvenida
+Comment=Información de bienvenida a Solera Linux
+Exec=/usr/libexec/solera/solera-welcome
+Icon=solera-logo
+Terminal=false
+Categories=GNOME;GTK;System;
+StartupNotify=true
+OnlyShowIn=GNOME;

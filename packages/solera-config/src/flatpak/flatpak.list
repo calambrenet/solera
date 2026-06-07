@@ -1,0 +1,4 @@
+# Set inicial de Flatpaks que Solera preinstala en el primer boot.
+# Una línea por App ID. Comentarios con #.
+org.mozilla.firefox
+com.github.tchx84.Flatseal

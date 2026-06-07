@@ -1,0 +1,2 @@
+Marcador para versionar el directorio. Los archivos reales de /etc/skel
+los aporta el paquete solera-config (instalado en la segunda fase).

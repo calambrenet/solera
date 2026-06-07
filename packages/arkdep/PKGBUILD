@@ -1,0 +1,39 @@
+# Maintainer: calambrenet <calambrenet@gmail.com>
+#
+# arkdep — empaquetado para el repositorio pacman de Solera.
+#
+# Solera redistribuye arkdep desde el upstream oficial (Arkane Linux) en lugar
+# de depender en runtime del repo de Arkane. Esto deja a Solera sin
+# dependencia operativa de la infraestructura de otra distro y prepara el
+# terreno para el fork previsto en la fase 6 del documento de diseño.
+#
+# Para bumpear la versión: actualiza pkgver al tag upstream, regenera la suma
+# (makepkg -g) y commitea.
+
+pkgname=arkdep
+pkgver=2025.12.18
+pkgrel=1
+pkgdesc='Toolkit for building, deploying and maintaining a btrfs-based multi-root system (Solera build)'
+arch=('any')
+url='https://codeberg.org/arkanelinux/arkdep'
+license=('GPL-3.0-or-later')
+depends=('curl' 'wget' 'btrfs-progs' 'dracut' 'systemd' 'gnupg' 'arch-install-scripts')
+source=("$pkgname-$pkgver.tar.gz::https://codeberg.org/arkanelinux/arkdep/archive/$pkgver.tar.gz")
+sha256sums=('976dff83fbcb17830313c20e51bff05188d8faba0d5ccdced7764a8c85f04a6b')
+
+package() {
+    cd "$srcdir/$pkgname"
+
+    install -d "$pkgdir/etc/arkdep"
+    install -d "$pkgdir/usr/bin"
+    install -d "$pkgdir/usr/share/man/man8"
+
+    install -m755 arkdep-build "$pkgdir/usr/bin/"
+    install -m755 arkdep       "$pkgdir/usr/bin/"
+
+    # Recipes "stock" que pueden servir de referencia/depends para usuarios.
+    cp -r arkdep-build.d/* "$pkgdir/etc/arkdep/"
+
+    gzip -c doc/arkdep.8       > "$pkgdir/usr/share/man/man8/arkdep.8.gz"
+    gzip -c doc/arkdep-build.8 > "$pkgdir/usr/share/man/man8/arkdep-build.8.gz"
+}

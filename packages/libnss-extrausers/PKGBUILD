@@ -1,0 +1,39 @@
+# Maintainer: calambrenet <calambrenet@gmail.com>
+#
+# libnss-extrausers — módulo NSS que añade /usr/lib/{passwd,group,shadow}
+# como segunda fuente de cuentas de usuario, además de /etc/.
+#
+# Por qué Solera lo necesita:
+#   arkdep-build mueve a propósito todos los usuarios/grupos del sistema
+#   (excepto root) de /etc/{passwd,group,shadow} a /usr/lib/* durante la
+#   construcción de la imagen, dejando /etc/ para las cuentas locales que
+#   el usuario crea tras instalar. Sin extrausers, esos archivos en
+#   /usr/lib son invisibles para getent y para useradd → "group 'wheel'
+#   does not exist", "group 'video' does not exist", etc.
+#
+# Origen: fork de Arkane (github.com/arkanelinux/libnss-extrausers), que es
+# lo que Arkane mismo distribuye en producción con arkdep. Mientras Solera
+# no tenga su propia copia mantenida, dependemos del pace de Arkane.
+# TODO: cuando estabilicemos la distro, forkear a calambrenet/libnss-extrausers.
+
+pkgname=libnss-extrausers
+pkgver=0.6
+pkgrel=1
+pkgdesc='NSS module that adds /usr/lib/{passwd,group,shadow} as a second account source'
+arch=('x86_64')
+url='https://github.com/arkanelinux/libnss-extrausers'
+license=('GPL-2.0-only')
+depends=('pam')
+makedepends=('gcc' 'make')
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/heads/main.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+    cd "$srcdir/$pkgname-main/src"
+    make
+}
+
+package() {
+    cd "$srcdir/$pkgname-main/src"
+    make DESTDIR="$pkgdir" install
+}

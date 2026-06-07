@@ -1,0 +1,12 @@
+root:x:0:
+wheel:x:998:solera
+users:x:984:
+adm:x:4:solera
+log:x:992:solera
+video:x:986:solera
+audio:x:996:solera
+input:x:994:solera
+plugdev:x:983:solera
+storage:x:1000:solera
+network:x:990:solera
+solera:x:1000:

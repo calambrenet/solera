@@ -1,0 +1,394 @@
+# Pipeline CI/CD de Solera Linux
+#
+# Encadena (documento de diseño §7.1):
+#   1. Construir solera-meta, solera-config, solera-keyring, arkdep,
+#      os-installer-config-solera (firmados).
+#   2. Publicarlos al repositorio pacman de Solera en S3 + invalidar CloudFront.
+#   3. Construir la imagen del sistema con arkdep, anclada al snapshot del
+#      Arch Linux Archive declarado en SOLERA_ALA_DATE.
+#   4. Construir la ISO con mkarchiso.
+#   5. Firmar imagen e ISO.
+#   6. Publicar artefactos a S3 + invalidación CloudFront.
+#
+# Secretos esperados (GitHub Actions Secrets, no en este archivo):
+#   AWS_ACCESS_KEY_ID                  # IAM con acceso al bucket S3
+#   AWS_SECRET_ACCESS_KEY
+#   AWS_REGION                         # p.ej. eu-west-1
+#   SOLERA_S3_BUCKET                   # nombre del bucket
+#   SOLERA_CDN                         # dominio CloudFront (sin scheme)
+#   SOLERA_CDN_DISTRIBUTION_ID         # ID para invalidaciones
+#   SOLERA_SIGNING_KEY_PRIV            # clave privada GPG (ascii-armored)
+#                                      # PARA FIRMAR PAQUETES E IMÁGENES
+#   SOLERA_SIGNING_KEY_FPR             # fingerprint (formato 40 hex)
+#   SOLERA_SIGNING_KEY_PASSPHRASE      # passphrase de la clave
+#   SOLERA_KEYRING_PUB                 # clave pública en formato 'gpg --export'
+#                                      # (binario b64-codificado)
+#
+# Variables de repo (no secretas):
+#   SOLERA_RELEASE                     # YY.MM (p.ej. 26.04)
+#   SOLERA_ALA_DATE                    # YYYY/MM/DD del snapshot
+#
+# Disparadores: push a main (build de desarrollo), tags vYY.MM.N (release
+# estable), o workflow_dispatch para builds manuales.
+
+name: build
+
+on:
+  # Triggers por push y tag deshabilitados mientras la infra (R2 + GPG +
+  # secretos + lista de paquetes AUR del workflow) no esté operativa.
+  # Reactivar en el Hito 4 reincorporando:
+  #   push:
+  #     branches: [main]
+  #     tags: ['v[0-9][0-9].[0-9][0-9]*']
+  workflow_dispatch:
+    inputs:
+      ala_date:
+        description: 'Arch Linux Archive snapshot date (YYYY/MM/DD)'
+        required: true
+        default: '2026/04/30'
+      release:
+        description: 'Solera release (YY.MM)'
+        required: true
+        default: '26.04'
+
+# Permisos mínimos por defecto; los jobs amplían lo justo.
+permissions:
+  contents: read
+
+env:
+  SOLERA_RELEASE: ${{ github.event.inputs.release || vars.SOLERA_RELEASE || '26.04' }}
+  SOLERA_ALA_DATE: ${{ github.event.inputs.ala_date || vars.SOLERA_ALA_DATE || '2026/04/30' }}
+  # El channel se decide por evento: tags = estable, push = desarrollo.
+  SOLERA_CHANNEL: ${{ startsWith(github.ref, 'refs/tags/v') && 'stable' || 'dev' }}
+
+jobs:
+  # =========================================================================
+  # 1) Construir los paquetes propios en un container Arch.
+  # =========================================================================
+  packages:
+    name: Build & sign packages
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+      options: --privileged
+    outputs:
+      build_id: ${{ steps.metadata.outputs.build_id }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build deps in the container
+        run: |
+          pacman -Syu --noconfirm --needed \
+              base-devel git sudo pacman-contrib gnupg curl rsync awk
+
+          # makepkg requiere un usuario no-root.
+          useradd -m builder
+          echo 'builder ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+          chown -R builder:builder "$GITHUB_WORKSPACE"
+
+      - name: Import signing key
+        env:
+          KEY_PRIV: ${{ secrets.SOLERA_SIGNING_KEY_PRIV }}
+          KEY_FPR:  ${{ secrets.SOLERA_SIGNING_KEY_FPR }}
+        run: |
+          # La privada del Secret se importa en el keyring de 'builder'.
+          # NO se persiste fuera del runner.
+          install -d -m700 -o builder -g builder /home/builder/.gnupg
+          sudo -u builder bash -c "
+              echo \"\$KEY_PRIV\" | gpg --batch --import
+              echo \"trusted-key \$KEY_FPR\" >> /home/builder/.gnupg/gpg.conf
+          "
+
+      - name: Deploy public keyring into packages/solera-keyring/keys
+        env:
+          KEY_PUB:  ${{ secrets.SOLERA_KEYRING_PUB }}
+          KEY_FPR:  ${{ secrets.SOLERA_SIGNING_KEY_FPR }}
+        run: |
+          set -euo pipefail
+          mkdir -p packages/solera-keyring/keys
+          # La pública se sube como base64 binario; lo desbase64eamos al
+          # formato esperado por pacman-key (gpg --export ... bin).
+          echo "$KEY_PUB" | base64 -d > packages/solera-keyring/keys/solera.gpg
+          printf '%s:4:\n' "$KEY_FPR" > packages/solera-keyring/keys/solera-trusted
+          : > packages/solera-keyring/keys/solera-revoked
+
+      - name: Generate Solera signing-key passphrase file
+        env:
+          KEY_PASS: ${{ secrets.SOLERA_SIGNING_KEY_PASSPHRASE }}
+        run: |
+          # makepkg --sign usa el agente GPG; precachear passphrase.
+          sudo -u builder bash -c "
+              echo \"\$KEY_PASS\" | gpg --batch --pinentry-mode loopback \
+                  --passphrase-fd 0 --output /tmp/sig-test.asc \
+                  --sign --detach-sign --armor /etc/os-release
+              rm /tmp/sig-test.asc
+          "
+
+      - name: Build packages
+        id: build
+        run: |
+          set -euo pipefail
+          # Orden importa por dependencias internas:
+          #   solera-keyring → arkdep → solera-config → solera-meta → os-installer-config-solera
+          for pkg in solera-keyring arkdep solera-config solera-meta os-installer-config-solera; do
+              echo "===> Building $pkg"
+              cd packages/$pkg
+              sudo -u builder makepkg --syncdeps --noconfirm --sign \
+                  --skipchecksums --skippgpcheck
+              cd "$GITHUB_WORKSPACE"
+          done
+
+      - name: Compute build metadata
+        id: metadata
+        run: |
+          BUILD_ID="$(date -u +%Y%m%dT%H%M%S)-${GITHUB_SHA::7}"
+          echo "build_id=$BUILD_ID" >> "$GITHUB_OUTPUT"
+          echo "SOLERA_BUILD=$BUILD_ID" >> "$GITHUB_ENV"
+
+      - name: Stage repo directory
+        run: |
+          set -euo pipefail
+          mkdir -p repo/x86_64
+          find packages -maxdepth 3 -name '*.pkg.tar.zst' -exec cp -v {} repo/x86_64/ \;
+          find packages -maxdepth 3 -name '*.pkg.tar.zst.sig' -exec cp -v {} repo/x86_64/ \;
+          # Genera el índice del repo pacman.
+          sudo -u builder bash -c "
+              cd repo/x86_64
+              repo-add --sign --key '${{ secrets.SOLERA_SIGNING_KEY_FPR }}' \
+                  solera.db.tar.gz *.pkg.tar.zst
+          "
+
+      - name: Upload repo to S3 (channel-specific path)
+        env:
+          AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION:    ${{ secrets.AWS_REGION }}
+        run: |
+          # awscli no viene en archlinux:latest base — instalamos.
+          pacman -S --noconfirm aws-cli-v2
+          aws s3 sync repo/ "s3://${{ secrets.SOLERA_S3_BUCKET }}/${SOLERA_CHANNEL}/repo/" \
+              --delete --exact-timestamps --no-progress
+
+      - name: Invalidate CloudFront (repo path only)
+        env:
+          AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION:    ${{ secrets.AWS_REGION }}
+        run: |
+          pacman -S --noconfirm aws-cli-v2 || true
+          aws cloudfront create-invalidation \
+              --distribution-id "${{ secrets.SOLERA_CDN_DISTRIBUTION_ID }}" \
+              --paths "/${SOLERA_CHANNEL}/repo/*"
+
+      - name: Upload repo as build artifact (debug, optional)
+        if: failure() || runner.debug == '1'
+        uses: actions/upload-artifact@v4
+        with:
+          name: solera-repo-${{ steps.metadata.outputs.build_id }}
+          path: repo/
+          retention-days: 7
+
+  # =========================================================================
+  # 2) Construir la imagen del sistema (arkdep) anclada al ALA.
+  # =========================================================================
+  image:
+    name: Build & sign system image
+    needs: packages
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+      # arkdep-build necesita btrfs y mounts privilegiados.
+      options: --privileged --cap-add=SYS_ADMIN --device /dev/loop-control:/dev/loop-control
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install host build deps
+        run: |
+          pacman-key --init
+          pacman-key --populate
+          pacman -Syu --noconfirm --needed \
+              base-devel arch-install-scripts btrfs-progs dracut gnupg \
+              aws-cli-v2 curl
+
+          # arkdep no está en repos oficiales de Arch; lo instalamos desde el
+          # paquete que construimos en el job anterior, ya publicado en S3.
+          cat >>/etc/pacman.conf <<EOF
+          [solera]
+          Server = https://${{ secrets.SOLERA_CDN }}/${SOLERA_CHANNEL}/repo/x86_64
+          EOF
+
+          # Importa la clave pública para verificar firmas del repo Solera.
+          echo "${{ secrets.SOLERA_KEYRING_PUB }}" | base64 -d \
+              | pacman-key --add -
+          pacman-key --lsign-key "${{ secrets.SOLERA_SIGNING_KEY_FPR }}"
+
+          pacman -Sy --noconfirm arkdep solera-keyring
+
+      - name: Import signing key
+        env:
+          KEY_PRIV: ${{ secrets.SOLERA_SIGNING_KEY_PRIV }}
+          KEY_FPR:  ${{ secrets.SOLERA_SIGNING_KEY_FPR }}
+        run: |
+          install -d -m700 ~/.gnupg
+          echo "$KEY_PRIV" | gpg --batch --import
+
+      - name: Build image
+        env:
+          SOLERA_BUILD:    ${{ needs.packages.outputs.build_id }}
+          SOLERA_REPO_URL: https://${{ secrets.SOLERA_CDN }}/${{ env.SOLERA_CHANNEL }}/repo
+        run: |
+          set -euo pipefail
+          chmod +x image/build.sh
+          image/build.sh
+          ls -la target/
+
+      - name: Sign image tarball
+        env:
+          KEY_FPR:  ${{ secrets.SOLERA_SIGNING_KEY_FPR }}
+          KEY_PASS: ${{ secrets.SOLERA_SIGNING_KEY_PASSPHRASE }}
+        run: |
+          for tar in target/*.tar.zst; do
+              echo "$KEY_PASS" | gpg --batch --pinentry-mode loopback \
+                  --passphrase-fd 0 --local-user "$KEY_FPR" \
+                  --detach-sign --armor --output "${tar}.sig" "$tar"
+          done
+
+      - name: Publish image to S3
+        env:
+          AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION:    ${{ secrets.AWS_REGION }}
+        run: |
+          set -euo pipefail
+          aws s3 sync target/ "s3://${{ secrets.SOLERA_S3_BUCKET }}/${SOLERA_CHANNEL}/images/solera/" \
+              --exclude '*.img' \
+              --no-progress
+          # NOTE: los .img sueltos (raw subvolumes) NO se suben; el tar.zst
+          # contiene los tres. Subimos también el *.pkgs (manifiesto) y la
+          # database entry.
+
+      - name: Update arkdep 'database' file for this channel
+        env:
+          AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION:    ${{ secrets.AWS_REGION }}
+        run: |
+          set -euo pipefail
+          # arkdep deploy lee:
+          #   https://<repo_url>/<variant>/database
+          # cada línea: <id>:<compress>:<sha256>
+          # Aquí actualizamos el database del variant 'solera' (channel-aware).
+          mkdir -p dist
+          tar="$(ls target/*.tar.zst)"
+          id="$(basename "$tar" | sed 's/\.tar\.zst$//')"
+          sum="$(sha256sum "$tar" | awk '{print $1}')"
+          aws s3 cp "s3://${{ secrets.SOLERA_S3_BUCKET }}/${SOLERA_CHANNEL}/images/solera/database" dist/database 2>/dev/null \
+              || : > dist/database
+          # Antepone la nueva entrada (arkdep deploy toma la primera línea por defecto).
+          echo "$id:zst:$sum" | cat - dist/database > dist/database.new
+          mv dist/database.new dist/database
+          aws s3 cp dist/database "s3://${{ secrets.SOLERA_S3_BUCKET }}/${SOLERA_CHANNEL}/images/solera/database"
+
+      - name: Invalidate CloudFront (images path)
+        env:
+          AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION:    ${{ secrets.AWS_REGION }}
+        run: |
+          aws cloudfront create-invalidation \
+              --distribution-id "${{ secrets.SOLERA_CDN_DISTRIBUTION_ID }}" \
+              --paths "/${SOLERA_CHANNEL}/images/*"
+
+      - name: Upload image as artifact (for debugging / manual review)
+        uses: actions/upload-artifact@v4
+        with:
+          name: solera-image-${{ env.SOLERA_RELEASE }}-${{ needs.packages.outputs.build_id }}
+          path: target/*.tar.zst*
+          retention-days: 14
+
+  # =========================================================================
+  # 3) Construir la ISO instaladora con mkarchiso.
+  # =========================================================================
+  iso:
+    name: Build & sign ISO
+    needs: [packages, image]
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+      options: --privileged --cap-add=SYS_ADMIN
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install mkarchiso & deps
+        run: |
+          pacman-key --init
+          pacman-key --populate
+          pacman -Syu --noconfirm --needed archiso aws-cli-v2 gnupg
+
+      - name: Rewrite pacman.conf to point [solera] at the real repo
+        run: |
+          sed -i "s|https://cdn\\.example\\.invalid/solera/repo/x86_64|https://${{ secrets.SOLERA_CDN }}/${SOLERA_CHANNEL}/repo/x86_64|g" \
+              iso/pacman.conf
+
+      - name: Trust the Solera signing key on the host
+        env:
+          KEY_PUB: ${{ secrets.SOLERA_KEYRING_PUB }}
+          KEY_FPR: ${{ secrets.SOLERA_SIGNING_KEY_FPR }}
+        run: |
+          echo "$KEY_PUB" | base64 -d | pacman-key --add -
+          pacman-key --lsign-key "$KEY_FPR"
+
+      - name: Import signing key (image/iso signing)
+        env:
+          KEY_PRIV: ${{ secrets.SOLERA_SIGNING_KEY_PRIV }}
+        run: |
+          install -d -m700 ~/.gnupg
+          echo "$KEY_PRIV" | gpg --batch --import
+
+      - name: Build ISO
+        run: |
+          set -euo pipefail
+          mkdir -p out work
+          mkarchiso -v -w work/ -o out/ iso/
+          ls -la out/
+
+      - name: Sign ISO
+        env:
+          KEY_FPR:  ${{ secrets.SOLERA_SIGNING_KEY_FPR }}
+          KEY_PASS: ${{ secrets.SOLERA_SIGNING_KEY_PASSPHRASE }}
+        run: |
+          for iso in out/*.iso; do
+              echo "$KEY_PASS" | gpg --batch --pinentry-mode loopback \
+                  --passphrase-fd 0 --local-user "$KEY_FPR" \
+                  --detach-sign --armor --output "${iso}.sig" "$iso"
+              sha256sum "$iso" > "${iso}.sha256"
+          done
+
+      - name: Publish ISO to S3
+        env:
+          AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION:    ${{ secrets.AWS_REGION }}
+        run: |
+          aws s3 sync out/ "s3://${{ secrets.SOLERA_S3_BUCKET }}/${SOLERA_CHANNEL}/iso/${SOLERA_RELEASE}/" \
+              --no-progress
+
+      - name: Invalidate CloudFront (iso path)
+        env:
+          AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION:    ${{ secrets.AWS_REGION }}
+        run: |
+          aws cloudfront create-invalidation \
+              --distribution-id "${{ secrets.SOLERA_CDN_DISTRIBUTION_ID }}" \
+              --paths "/${SOLERA_CHANNEL}/iso/*"
+
+      - name: Upload ISO as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: solera-iso-${{ env.SOLERA_RELEASE }}-${{ needs.packages.outputs.build_id }}
+          path: out/*.iso*
+          retention-days: 14

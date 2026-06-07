@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Solera first-boot:
+# - Asegura el remote Flathub a nivel de sistema.
+# - Instala el set mínimo declarado en /etc/solera/flatpak.list.
+# - Marca el flag de "first boot ya hecho" para no repetirse.
+
+set -euo pipefail
+
+readonly FLAG_FILE='/var/lib/solera/first-boot.done'
+readonly FLATPAK_LIST='/etc/solera/flatpak.list'
+
+mkdir -p "$(dirname "$FLAG_FILE")"
+
+if [[ -f "$FLAG_FILE" ]]; then
+    exit 0
+fi
+
+# 1. Remote Flathub (idempotente)
+flatpak remote-add --if-not-exists --system flathub \
+    https://dl.flathub.org/repo/flathub.flatpakrepo
+
+# 2. Set inicial (si la red falla en este boot, lo dejamos para el siguiente
+#    intento: NO creamos el flag.)
+if ! ping -c1 -W3 dl.flathub.org > /dev/null 2>&1; then
+    echo "solera-first-boot: sin conectividad a Flathub, se reintentará en el próximo boot"
+    exit 0
+fi
+
+while IFS= read -r app_id; do
+    # Saltar líneas vacías y comentarios
+    [[ -z "$app_id" || "$app_id" =~ ^[[:space:]]*# ]] && continue
+    flatpak install --system --noninteractive --or-update flathub "$app_id" || \
+        echo "solera-first-boot: no se pudo instalar $app_id (continuamos)"
+done < "$FLATPAK_LIST"
+
+touch "$FLAG_FILE"

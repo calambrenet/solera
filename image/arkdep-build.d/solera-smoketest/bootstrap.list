@@ -1,0 +1,29 @@
+# Smoketest — solo lo imprescindible para arrancar a un getty.
+# Sin GNOME, sin solera-meta, sin solera-keyring (no necesitamos verificar
+# firmas del repo [solera] porque la imagen no consume nada de [solera]).
+
+base
+linux
+linux-firmware
+sudo
+
+# Microcódigo (la receta lo mueve a /usr/lib en post-process)
+amd-ucode
+intel-ucode
+
+# Filesystem y arranque
+btrfs-progs
+dosfstools
+efibootmgr
+
+# Initramfs (arkdep usa dracut)
+dracut
+
+# dbus moderno
+dbus-broker-units
+
+# Red mínima para que el sistema instalado tenga internet
+networkmanager
+
+# Firmwares de audio (no estorban, pesan poco — alinea con la imagen real)
+sof-firmware

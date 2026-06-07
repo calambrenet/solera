@@ -1,0 +1,14 @@
+[Unit]
+Description=Solera zram swap
+Documentation=https://github.com/calambrenet/solera
+After=systemd-modules-load.service local-fs.target
+Before=multi-user.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+TimeoutStartSec=10s
+ExecStart=/usr/libexec/solera/solera-zram-setup
+
+[Install]
+WantedBy=multi-user.target

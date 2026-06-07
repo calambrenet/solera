@@ -1,0 +1,45 @@
+#
+# Solera pacman.conf — TEMPLATE
+#
+# El wrapper image/build.sh sustituye @TOKENS@ por valores antes de pasarle
+# este archivo a arkdep-build. Tokens:
+#   @ALA_DATE@           fecha YYYY/MM/DD del snapshot del Arch Linux Archive
+#   @SOLERA_REPO@        URL base del repo pacman de Solera
+#   @SOLERA_SIGLEVEL@    SigLevel del repo [solera]. En builds locales se
+#                        resuelve a 'Optional TrustAll' porque los paquetes
+#                        recién construidos no llevan firma; en builds de
+#                        release se resuelve a 'Required' contra la clave de
+#                        firma del repo. El switch lo hace image/build.sh
+#                        según el prefijo de SOLERA_REPO_URL (file://: trust;
+#                        https://: required).
+#
+
+[options]
+HoldPkg     = pacman glibc
+Architecture = auto
+Color
+ParallelDownloads = 5
+SigLevel    = Required DatabaseOptional
+LocalFileSigLevel = Optional
+
+# Solera FIJA la base de Arch a una fecha del Arch Linux Archive — esto es lo
+# que hace cada release reproducible bit a bit (documento de diseño §8.1).
+# El pinning aplica a [core], [extra] y [multilib]. NO se incluyen mirrorlist
+# convencionales porque ese sería precisamente el "hoy" de Arch.
+
+[core]
+Server = https://archive.archlinux.org/repos/@ALA_DATE@/$repo/os/$arch
+
+[extra]
+Server = https://archive.archlinux.org/repos/@ALA_DATE@/$repo/os/$arch
+
+[multilib]
+Server = https://archive.archlinux.org/repos/@ALA_DATE@/$repo/os/$arch
+
+# Repositorio propio de Solera. Aquí viven solera-meta, solera-config,
+# solera-keyring, arkdep (reempaquetado), libnss-extrausers y
+# gnome-shell-extension-dash-to-dock. En producción será S3/R2 + CDN; en
+# build local es file:///tmp/solera-localrepo.
+[solera]
+SigLevel = @SOLERA_SIGLEVEL@
+Server = @SOLERA_REPO@/$arch

@@ -1,0 +1,57 @@
+# Maintainer: calambrenet <calambrenet@gmail.com>
+#
+# os-installer-config-solera: configuración del instalador gráfico
+# (`os-installer`) para que despliegue Solera vía arkdep.
+#
+# El paquete `os-installer` upstream (en [extra] de Arch) lee /etc/os-installer
+# y delega en scripts el trabajo concreto de particionado/instalación. Aquí
+# proveemos los archivos para que ese instalador deposite una imagen Solera
+# en el disco usando `arkdep deploy`.
+#
+# Diseño replicado de os-installer-config-arkdep de Arkane (BSD-3-Clause) y
+# adaptado a Solera (labels, fstab, repo).
+
+pkgname=os-installer-config-solera
+pkgver=0.1.0
+pkgrel=9
+pkgdesc='os-installer configuration for installing Solera Linux via arkdep'
+arch=('any')
+url='https://github.com/calambrenet/solera'
+license=('BSD-3-Clause')
+provides=('os-installer-config')
+conflicts=('os-installer-config' 'os-installer-config-arkdep')
+depends=('os-installer' 'arkdep' 'sudo' 'btrfs-progs' 'dosfstools')
+
+package() {
+    cd "$startdir"
+
+    install -d "$pkgdir/etc/os-installer"
+    install -m644 src/config.yaml      "$pkgdir/etc/os-installer/config.yaml"
+
+    install -d "$pkgdir/etc/os-installer/bits"
+    install -m644 src/bits/part.sfdisk "$pkgdir/etc/os-installer/bits/part.sfdisk"
+
+    install -d "$pkgdir/etc/os-installer/scripts"
+    install -m755 src/scripts/prepare.sh    "$pkgdir/etc/os-installer/scripts/prepare.sh"
+    install -m755 src/scripts/install.sh    "$pkgdir/etc/os-installer/scripts/install.sh"
+    install -m755 src/scripts/configure.sh  "$pkgdir/etc/os-installer/scripts/configure.sh"
+
+    install -d "$pkgdir/etc/os-installer/scripts/install.sh.d"
+    install -m755 src/scripts/install.sh.d/10-partition.sh \
+        "$pkgdir/etc/os-installer/scripts/install.sh.d/10-partition.sh"
+    install -m755 src/scripts/install.sh.d/15-systemd-boot.sh \
+        "$pkgdir/etc/os-installer/scripts/install.sh.d/15-systemd-boot.sh"
+    install -m755 src/scripts/install.sh.d/20-arkdep-deploy.sh \
+        "$pkgdir/etc/os-installer/scripts/install.sh.d/20-arkdep-deploy.sh"
+
+    install -d "$pkgdir/etc/os-installer/scripts/configure.sh.d"
+    install -m755 src/scripts/configure.sh.d/10-locale.sh \
+        "$pkgdir/etc/os-installer/scripts/configure.sh.d/10-locale.sh"
+    # Nota: swap se gestiona por zram (solera-config ship la config), no por
+    # script aquí. El bootstrap de /etc/{passwd,group,shadow} se hace al boot
+    # vía solera-etc-bootstrap.service (también en solera-config).
+
+    install -d "$pkgdir/etc/os-installer/overlay_arkdep/etc"
+    install -m644 src/overlay_arkdep/etc/fstab \
+        "$pkgdir/etc/os-installer/overlay_arkdep/etc/fstab"
+}

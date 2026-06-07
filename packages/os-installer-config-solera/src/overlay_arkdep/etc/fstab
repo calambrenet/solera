@@ -1,0 +1,30 @@
+# /etc/fstab plantilla aplicada por os-installer al deployment de Solera.
+#
+# /boot (ESP) NO va aquí. El ESP tiene GPT partition type EFI System
+# (C12A7328-F81F-11D2-BA4B-00A0C93EC93B, lo pone part.sfdisk) y
+# systemd-gpt-auto-generator lo detecta y crea un AUTOMOUNT lazy — el
+# ESP solo se monta cuando algo accede a /boot (típicamente al hacer
+# `arkdep update`). El boot diario no espera al ESP. systemd-boot lee
+# el ESP vía firmware UEFI antes de que Linux exista, así que /boot
+# montado no es necesario para arrancar. Patrón confirmado: openSUSE
+# Aeon, MicroOS y otros sistemas inmutables.
+#
+# Si /boot estuviera aquí, systemd-gpt-auto-generator NO generaría el
+# automount (man systemd-gpt-auto-generator: "No configuration is
+# created for mount points that are configured in fstab"), y el boot
+# quedaría atado a esperar el device en local-fs.target, con el riesgo
+# de caer a emergency mode si el ESP tarda en enumerarse. Es lo que
+# nos pasó en commits previos al adoptar este patrón.
+#
+# Los 4 subvols Btrfs son datos persistentes que sobreviven al cambio
+# de deployment (rollback no pierde nada). nofail para que un fallo
+# de mount (extremadamente raro: misma partición que root) no caiga
+# a emergency mode — Solera tiene root locked y no podríamos diagnosticar.
+#
+# UUID en lugar de device path: estable, independiente del orden de
+# enumeración de discos (sda2 puede ser sdb2 si se añade otro disco).
+
+UUID=@ROOT_UUID@  /home             btrfs  rw,relatime,subvol=arkdep/shared/home,compress=zstd,nofail    0 0
+UUID=@ROOT_UUID@  /root             btrfs  rw,relatime,subvol=arkdep/shared/root,compress=zstd,nofail    0 0
+UUID=@ROOT_UUID@  /arkdep           btrfs  rw,relatime,subvol=arkdep,compress=zstd,nofail                 0 0
+UUID=@ROOT_UUID@  /var/lib/flatpak  btrfs  rw,relatime,subvol=arkdep/shared/flatpak,compress=zstd,nofail  0 0

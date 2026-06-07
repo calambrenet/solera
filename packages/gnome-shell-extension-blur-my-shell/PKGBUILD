@@ -1,0 +1,56 @@
+# Maintainer: calambrenet <calambrenet@gmail.com>
+#
+# gnome-shell-extension-blur-my-shell — extensión por defecto de Solera.
+# Aplica efectos de blur al fondo del panel, dash y appfolders. La config
+# por defecto (sigma, brightness, blur en dash-to-dock) la pone
+# solera-config vía dconf override 07-blur-my-shell.
+#
+# Solera empaqueta la extensión a nivel de sistema (mismo patrón que
+# gnome-shell-extension-dash-to-dock), no por usuario, para que esté
+# presente desde el primer arranque sin necesidad de extensions.gnome.org.
+
+pkgname=gnome-shell-extension-blur-my-shell
+pkgver=72
+pkgrel=1
+pkgdesc='Blur effects for the GNOME Shell (system-wide install for Solera)'
+arch=('any')
+url='https://github.com/aunetx/blur-my-shell'
+license=('GPL-3.0-or-later')
+depends=('gnome-shell')
+# glib2: glib-compile-schemas. gettext: msgfmt para compilar locales.
+# NO usamos el Makefile upstream (depende de `gnome-extensions pack` que
+# requiere gnome-shell completo en el host de build); hacemos copia +
+# compile a mano para depender solo de glib2 y gettext.
+makedepends=('glib2' 'gettext')
+_uuid='blur-my-shell@aunetx'
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+package() {
+    cd "$srcdir/blur-my-shell-$pkgver"
+    local destdir="$pkgdir/usr/share/gnome-shell/extensions/$_uuid"
+    install -d "$destdir/schemas"
+
+    # Metadata y licencia en la raíz del extension dir.
+    install -m644 metadata.json LICENSE "$destdir/"
+
+    # Código (todo lo de src/* va a la raíz del extension).
+    cp -r src/. "$destdir/"
+
+    # Resources (icons, ui).
+    cp -r resources "$destdir/"
+
+    # Schema: el .xml en schemas/ + compilarlo a gschemas.compiled.
+    install -m644 schemas/org.gnome.shell.extensions.blur-my-shell.gschema.xml \
+        "$destdir/schemas/"
+    glib-compile-schemas "$destdir/schemas/"
+
+    # Locales: .po → .mo en locale/<lang>/LC_MESSAGES/<uuid>.mo
+    install -d "$destdir/locale"
+    for po in po/*.po; do
+        local lang
+        lang=$(basename "$po" .po)
+        install -d "$destdir/locale/$lang/LC_MESSAGES"
+        msgfmt -o "$destdir/locale/$lang/LC_MESSAGES/$_uuid.mo" "$po"
+    done
+}

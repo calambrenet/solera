@@ -1,0 +1,6 @@
+# Secondary stage — paquetes instalados vía `arch-chroot pacman -S`.
+# Solera se instala instalando un solo paquete: solera-meta. Sus depends
+# traen todo lo demás (GNOME, drivers, Flatpak, Distrobox, solera-config,
+# arkdep, etc.).
+
+solera-meta

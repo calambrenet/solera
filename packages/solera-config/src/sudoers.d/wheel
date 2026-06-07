@@ -1,0 +1,11 @@
+## Solera: miembros del grupo `wheel` pueden usar sudo.
+##
+## En Arch upstream, /etc/sudoers ship la línea `%wheel ALL=(ALL:ALL) ALL`
+## COMENTADA — el admin debe descomentarla a mano post-install. En Solera,
+## el primer usuario lo crea gnome-initial-setup con `useradd -G wheel,...`
+## y esperamos que sea admin de la máquina. Este drop-in habilita wheel
+## sin tocar /etc/sudoers (que es de filesystem package, conflictivo).
+##
+## Permisos 0440 obligatorios — sudo ignora archivos con otros permisos.
+
+%wheel ALL=(ALL:ALL) ALL

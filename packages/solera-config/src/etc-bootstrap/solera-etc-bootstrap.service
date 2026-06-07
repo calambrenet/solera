@@ -1,0 +1,15 @@
+[Unit]
+Description=Solera /etc/{passwd,group,shadow} bootstrap (merge from /usr/lib)
+Documentation=https://github.com/calambrenet/solera
+ConditionPathExists=/usr/lib/group
+DefaultDependencies=no
+After=local-fs.target
+Before=sysinit.target systemd-sysusers.service nss-user-lookup.target shadow.service accounts-daemon.service gdm.service display-manager.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/solera/solera-etc-bootstrap
+
+[Install]
+WantedBy=sysinit.target

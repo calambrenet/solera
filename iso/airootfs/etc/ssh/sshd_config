@@ -1,0 +1,5 @@
+# sshd en el live: deshabilitado por defecto. El instalador no requiere SSH.
+PermitRootLogin no
+PasswordAuthentication no
+PermitEmptyPasswords no
+UsePAM yes

@@ -1,0 +1,53 @@
+# Build artifacts
+*.pkg.tar.zst
+*.pkg.tar.zst.sig
+target/
+out/
+work/
+
+# Tarballs descargados por makepkg en source=(...) — viven en
+# packages/<pkg>/ pero NUNCA se commitea (se re-descargan al construir).
+*.tar.gz
+*.zip
+
+# pacman.conf renderizados desde *.template por image/build.sh — el
+# *.template SÍ se commitea, el rendered NO.
+image/arkdep-build.d/*/pacman.conf
+
+# Backup huérfano del script de build si falla a medias.
+iso/pacman.conf.bak
+
+# Bundle de la imagen del sistema (tarball arkdep, ~750 MB). Generado por
+# build-iso-local.sh tras correr arkdep-build. Nunca se commitea.
+iso/airootfs/var/lib/solera-bundle/
+
+# makepkg leftovers en package directories. La regla genérica
+# `packages/*/src/` solía estar aquí pero colisionaba con la convención
+# manual de los PKGBUILD propios (solera-config, solera-meta,
+# os-installer-config-solera) que usan src/ como carpeta de archivos
+# fuente versionados. Por eso solo ignoramos src/ de los paquetes que
+# usan source=() con tarballs descargados; el resto SÍ se commitea.
+packages/*/pkg/
+packages/libnss-extrausers/src/
+packages/gnome-shell-extension-dash-to-dock/src/
+packages/gnome-shell-extension-blur-my-shell/src/
+packages/gnome-shell-extension-compiz-alike-magic-lamp-effect/src/
+packages/zsh-theme-powerlevel10k/src/
+packages/solera-config/src/solera-config.install
+packages/os-installer/src/
+
+# Editor / IDE
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Local secret material (should never be committed)
+secrets/
+*.key
+*.gpg-private

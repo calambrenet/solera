@@ -1,0 +1,26 @@
+# Defaults para blur-my-shell. Replica el look configurado en la máquina
+# de referencia del usuario: blur con sigma=30, brightness=0.6 en panel,
+# dash-to-dock y appfolders. style-dash-to-dock=0 mantiene el blur sutil
+# sin alterar la transparencia ya configurada del dock.
+#
+# Las claves rounded-blur-found y settings-version no se incluyen aquí:
+# son state interno auto-gestionado por la extensión, no preferencias.
+
+[org/gnome/shell/extensions/blur-my-shell/appfolder]
+brightness=0.6
+sigma=30
+
+[org/gnome/shell/extensions/blur-my-shell/dash-to-dock]
+blur=true
+brightness=0.6
+sigma=30
+static-blur=true
+style-dash-to-dock=0
+
+[org/gnome/shell/extensions/blur-my-shell/panel]
+brightness=0.6
+sigma=30
+
+[org/gnome/shell/extensions/blur-my-shell/window-list]
+brightness=0.6
+sigma=30

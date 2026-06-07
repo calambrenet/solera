@@ -1,0 +1,11 @@
+[Unit]
+Description=Pacman keyring tmpfs
+
+[Mount]
+What=tmpfs
+Where=/etc/pacman.d/gnupg
+Type=tmpfs
+Options=mode=755
+
+[Install]
+WantedBy=multi-user.target

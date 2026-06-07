@@ -1,0 +1,25 @@
+# solera-config.install — scriptlet ejecutado por pacman tras instalar/upgrade.
+#
+# Pacman no permite que dos paquetes "posean" el mismo archivo. Para
+# personalizar archivos que ya son propiedad de paquetes upstream (ufw,
+# filesystem, bash, dconf) los aparcamos en /usr/lib/solera-config/factory/
+# y los copiamos a su sitio final desde aquí, post-extracción.
+#
+# Esto pierde el tracking de pacman para esos archivos (no se reinstalan al
+# hacer `pacman -S --asdeps`, ni se restauran con --overwrite), pero Solera
+# es inmutable: los archivos viven en el subvol /etc del deployment, no se
+# modifican post-deploy, y los reescribirá la próxima imagen.
+
+_apply_factory() {
+    if [[ -d /usr/lib/solera-config/factory ]]; then
+        cp -rT /usr/lib/solera-config/factory /
+    fi
+}
+
+post_install() {
+    _apply_factory
+}
+
+post_upgrade() {
+    _apply_factory
+}

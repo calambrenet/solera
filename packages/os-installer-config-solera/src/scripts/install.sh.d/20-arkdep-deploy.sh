@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# 20-arkdep-deploy.sh — instala Solera desde el bundle local de la ISO.
+#
+# La ISO trae /var/lib/solera-bundle/solera-*.tar.zst, generado por
+# arkdep-build. En lugar de descargarla de internet, copiamos el bundle a
+# la cache del nuevo sistema y llamamos `arkdep deploy cache <id>`, que
+# salta toda la lógica de red, firma GPG y mirror selection.
+
+set -o pipefail
+
+readonly BUNDLE_DIR='/var/lib/solera-bundle'
+
+# 1) Localizar el bundle.
+bundle_file=$(ls "$BUNDLE_DIR"/solera-*.tar.zst 2>/dev/null | head -1)
+[[ -n "$bundle_file" ]] \
+    || quit_on_err "Bundle de Solera no encontrado en $BUNDLE_DIR"
+
+# El deployment_id es el filename sin la extensión .tar.zst — coincide con
+# la convención de naming de arkdep-build (variant-build-<timestamp>).
+deployment_id=$(basename "$bundle_file" .tar.zst)
+
+# Solo necesitamos root_uuid: se usa en el cmdline `options root=UUID=...`
+# del template systemd-boot Y en las entradas fstab de los subvols btrfs.
+# El ESP no está en fstab — systemd-gpt-auto-generator genera el automount
+# lazy basándose en el GPT partition type que pone part.sfdisk.
+root_uuid=$(sudo blkid -o value -s UUID "$root_blk") \
+    || quit_on_err "No se pudo obtener UUID de root ($root_blk)"
+[[ -n "$root_uuid" ]] \
+    || quit_on_err 'UUID de root vacío tras formatear'
+
+# 2) Inicializar arkdep en el target. Crea /arkdep + subvolúmenes shared
+#    (incluido /arkdep/overlay como subvol vacío).
+sudo ARKDEP_ROOT="$workdir" arkdep init || quit_on_err 'arkdep init falló'
+
+# 2.5) Sobrescribir el template systemd-boot que arkdep init dejó por
+#      defecto. Razones:
+#      - El default upstream tiene `root="LABEL=arkane_root"` y title
+#        "Arkane Linux - Arkdep". Solera escribe root=UUID=<root_uuid>
+#        para no depender de /dev/disk/by-label en el primer arranque.
+#      - El default incluye `initrd /amd-ucode.img` e `intel-ucode.img`,
+#        que el smoketest no instala. arkdep imprime warnings durante el
+#        deploy ("No such file or directory") y systemd-boot al arrancar
+#        intenta cargarlos. Se quitan; cuando la imagen real incluya
+#        amd-ucode / intel-ucode los volvemos a añadir condicionalmente.
+sudo tee "$workdir/arkdep/templates/systemd-boot" >/dev/null <<EOF
+title Solera Linux
+linux /arkdep/%target%/vmlinuz
+initrd /arkdep/%target%/initramfs-linux.img
+options root="UUID=$root_uuid" rootflags=subvol=/arkdep/deployments/%target%/rootfs rw quiet
+EOF
+
+# 3) Sembrar /arkdep/overlay con el fstab plantilla. Durante "arkdep deploy"
+#    el overlay se copia recursivamente sobre rootfs/ del deployment recién
+#    recibido (ver arkdep, "Copying overlay to deployment"), así que el
+#    fstab acaba en deployments/<id>/rootfs/etc/fstab. Es el patrón que usa
+#    Arkane (configure.sh.d/02-overlay.sh) y persiste en futuros deploys.
+sudo install -d -m755 "$workdir/arkdep/overlay/etc"
+sed -e "s|@ROOT_UUID@|$root_uuid|g" \
+    "$osidir/overlay_arkdep/etc/fstab" | \
+    sudo tee "$workdir/arkdep/overlay/etc/fstab" >/dev/null \
+        || quit_on_err 'No se pudo sembrar fstab en /arkdep/overlay'
+sudo chmod 0644 "$workdir/arkdep/overlay/etc/fstab"
+
+# 4) Sembrar la cache del target con el bundle de la ISO.
+sudo cp "$bundle_file" "$workdir/arkdep/cache/" \
+    || quit_on_err 'No se pudo copiar el bundle a la cache de arkdep'
+
+# 5) Deploy desde cache. Para entonces 15-systemd-boot.sh ya ha poblado
+#    $workdir/boot/loader/entries/, que es donde arkdep escribe la entrada
+#    del kernel desplegado. arkdep aplicará /arkdep/overlay sobre rootfs/.
+sudo ARKDEP_ROOT="$workdir" arkdep deploy cache "$deployment_id" \
+    || quit_on_err 'arkdep deploy cache falló'

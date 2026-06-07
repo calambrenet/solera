@@ -1,0 +1,46 @@
+%YAML 1.2
+---
+
+distribution_name: 'Solera Linux'
+
+# Solera instala offline desde el bundle de la ISO (/var/lib/solera-bundle/).
+# No requiere conexión para el flujo de instalación principal.
+internet_connection_required: no
+internet_checker_url: 'http://nmcheck.gnome.org/check_network_status.txt'
+
+fixed_language: no
+
+suggested_languages:
+    - 'en'
+    - 'es'
+    - 'de'
+    - 'fr'
+    - 'pt'
+
+welcome_page:
+    logo: '/usr/share/pixmaps/solera-logo.svg'
+    text: 'Bienvenido a Solera Linux
+
+           Este asistente te guiará por el proceso de instalación. Tras
+           el reinicio, GNOME te pedirá crear tu usuario y configurar el
+           sistema (idioma, privacidad, conexión). El entorno live no es
+           Solera real: solo es el medio instalador. Solera es una distro
+           inmutable y atómica, con rollback disponible en cualquier
+           momento.'
+    usage: yes
+
+minimum_disk_size: 64
+offer_disk_encryption: yes
+
+# UserPage saltado: el primer usuario lo crea gnome-initial-setup al
+# primer arranque del sistema instalado (patrón Arkane / Silverblue /
+# openSUSE Aeon). Tener UserPage activo pediría usuario+contraseña que
+# no se aplican a ningún lado y solo confunde al usuario.
+skip_user:   yes
+skip_locale: no
+
+failure_help_url: 'https://github.com/calambrenet/solera/issues/new'
+
+browser_cmd: 'epiphany'
+disks_cmd  : 'gnome-disks'
+wifi_cmd   : 'gnome-control-center wifi'

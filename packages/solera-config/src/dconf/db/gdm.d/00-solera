@@ -1,0 +1,20 @@
+# Customización de la pantalla de GDM para Solera.
+#
+# Compilado en /etc/dconf/db/gdm por `dconf update` (lo dispara el
+# post_install de arkdep-build).
+
+[org/gnome/login-screen]
+logo='/usr/share/pixmaps/solera-logo.svg'
+banner-message-enable=true
+banner-message-text='Solera Linux'
+disable-user-list=false
+
+[org/gnome/desktop/background]
+picture-uri='file:///usr/share/backgrounds/solera/wallpaper.jpg'
+picture-uri-dark='file:///usr/share/backgrounds/solera/wallpaper.jpg'
+primary-color='#2b1810'
+
+# GDM tiene su propio profile dconf; no hereda el accent del usuario, hay
+# que setearlo aquí para que el greeter también use amarillo.
+[org/gnome/desktop/interface]
+accent-color='yellow'

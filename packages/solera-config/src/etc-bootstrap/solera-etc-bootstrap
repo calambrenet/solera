@@ -1,0 +1,37 @@
+#!/bin/bash
+# solera-etc-bootstrap — copia las entradas faltantes de
+# /usr/lib/{passwd,group,shadow} hacia /etc/* en cada arranque.
+#
+# Por qué existe:
+#   arkdep-build deja /etc/{passwd,group,shadow} con solo `root` y mueve
+#   el resto a /usr/lib/* (cuenta con libnss-extrausers para que NSS los
+#   resuelva en runtime). Pero `useradd` lee /etc/* directamente y no
+#   pasa por NSS, así que cuando gnome-initial-setup pide `useradd -G
+#   wheel,...` el comando falla con exit 6 ("specified group doesn't
+#   exist").
+#
+#   Este script fusiona las entradas faltantes, manteniendo /etc/* como
+#   "fuente local mutable" y /usr/lib/* como "fuente de sistema canónica".
+#   Es idempotente: solo añade líneas ausentes; nunca sobreescribe.
+#
+# Cuándo corre:
+#   En `sysinit.target`, Before=display-manager.service y
+#   Before=accounts-daemon.service, así gnome-initial-setup lo ve listo.
+
+set -e
+
+for file in passwd group shadow; do
+    src="/usr/lib/$file"
+    dst="/etc/$file"
+    [[ -f "$src" ]] || continue
+    [[ -f "$dst" ]] || continue
+
+    while IFS= read -r line; do
+        [[ -z "$line" ]] && continue
+        name="${line%%:*}"
+        [[ -z "$name" ]] && continue
+        if ! grep -q "^${name}:" "$dst"; then
+            printf '%s\n' "$line" >> "$dst"
+        fi
+    done < "$src"
+done

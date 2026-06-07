@@ -1,0 +1,5 @@
+[org/gnome/desktop/peripherals/keyboard]
+numlock-state=true
+
+[org/gnome/desktop/input-sources]
+xkb-options=['terminate:ctrl_alt_bksp']

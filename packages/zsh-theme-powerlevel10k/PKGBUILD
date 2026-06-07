@@ -1,0 +1,59 @@
+# Maintainer: calambrenet <calambrenet@gmail.com>
+#
+# zsh-theme-powerlevel10k — tema por defecto del prompt de zsh en Solera.
+# Source upstream: https://github.com/romkatv/powerlevel10k
+#
+# No existe en los repos oficiales de Arch (solo en AUR como
+# zsh-theme-powerlevel10k / -git). Solera lo empaqueta para no depender
+# de AUR en el build de la imagen, mismo patrón que con
+# gnome-shell-extension-dash-to-dock.
+#
+# La carga la hace /etc/skel/.zshrc con:
+#   source /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme
+# y la configuración por usuario vive en ~/.p10k.zsh, también sembrada
+# desde /etc/skel.
+#
+# Nota sobre gitstatusd: el tarball de p10k NO incluye el binario
+# precompilado de gitstatusd (sería ~50 MB cubriendo todas las arches).
+# Sin él, p10k arranca pero el prompt no muestra estado de git. El AUR
+# lo compila desde fuente (~200 líneas, libgit2 estático + cmake). Aquí
+# preferimos bajar el binario oficial pre-compilado de
+# romkatv/gitstatus, cuya versión y sha256 declara p10k en
+# gitstatus/install.info. Esto evita ~3 min de compilación por build a
+# coste de fijar arch=x86_64 (cuando soportemos aarch64 se duplica la
+# fuente).
+
+pkgname=zsh-theme-powerlevel10k
+pkgver=1.20.0
+_gitstatus_ver=1.5.4
+pkgrel=2
+pkgdesc='A fast reimplementation of Powerlevel9k ZSH theme'
+arch=('x86_64')
+url='https://github.com/romkatv/powerlevel10k'
+license=('MIT')
+depends=('zsh')
+source=(
+    "$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz"
+    "gitstatusd-linux-x86_64-${_gitstatus_ver}.tar.gz::https://github.com/romkatv/gitstatus/releases/download/v${_gitstatus_ver}/gitstatusd-linux-x86_64.tar.gz"
+)
+sha256sums=(
+    'd8187d44b697b3a37a8c4896678b4380e717cbf2850179529358348780a2d3d7'
+    '9633816e7832109e530c9e2532b11a1edae08136d63aa7e40246c0339b7db304'
+)
+
+package() {
+    cd "$srcdir/powerlevel10k-$pkgver"
+
+    install -d "$pkgdir/usr/share/zsh-theme-powerlevel10k"
+    cp -a config gitstatus internal *.zsh* \
+        "$pkgdir/usr/share/zsh-theme-powerlevel10k/"
+
+    # Inyectar el gitstatusd pre-compilado donde p10k lo busca.
+    install -Dm755 "$srcdir/gitstatusd-linux-x86_64" \
+        "$pkgdir/usr/share/zsh-theme-powerlevel10k/gitstatus/usrbin/gitstatusd-linux-x86_64"
+
+    install -Dm644 README.md \
+        "$pkgdir/usr/share/doc/$pkgname/README.md"
+    install -Dm644 LICENSE \
+        "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

@@ -1,0 +1,37 @@
+# Maintainer: calambrenet <calambrenet@gmail.com>
+#
+# gnome-shell-extension-dash-to-dock — extensión por defecto de Solera
+# (decisión #3 en CLAUDE.md). Convierte el dock de GNOME en una dock
+# siempre visible estilo macOS, lo cual va alineado con el flujo de
+# escritorio que Solera quiere ofrecer out-of-the-box.
+#
+# Solera empaqueta la extensión a nivel de sistema (/usr/share/gnome-shell/
+# extensions/) en vez de instalarla por usuario, para que esté presente
+# desde el primer arranque sin necesidad de extensions.gnome.org. La
+# activación por defecto la hace solera-config vía dconf override.
+
+pkgname=gnome-shell-extension-dash-to-dock
+pkgver=105
+pkgrel=1
+pkgdesc='A dock for the GNOME Shell (system-wide install for Solera)'
+arch=('any')
+url='https://github.com/micheleg/dash-to-dock'
+license=('GPL-2.0-or-later')
+depends=('gnome-shell')
+makedepends=('glib2' 'gettext' 'sassc')
+# Convención de tags upstream: extensions.gnome.org-v<N>. v105 declara
+# shell-version = [45, 46, 47, 48, 49, 50] en metadata.json — cubre todo
+# el rango GNOME que se va a encontrar en cualquier snapshot ALA reciente.
+_tag="extensions.gnome.org-v$pkgver"
+source=("dash-to-dock-$_tag.tar.gz::$url/archive/refs/tags/$_tag.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+    cd "$srcdir/dash-to-dock-$_tag"
+    make
+}
+
+package() {
+    cd "$srcdir/dash-to-dock-$_tag"
+    make INSTALLBASE="$pkgdir/usr/share/gnome-shell/extensions" install
+}

@@ -1,0 +1,13 @@
+[Unit]
+Description=Compile Solera dconf overrides for the live environment
+DefaultDependencies=no
+Before=display-manager.service gdm.service
+ConditionPathExists=/etc/dconf/db/local.d
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/dconf update
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

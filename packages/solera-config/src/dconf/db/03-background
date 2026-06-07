@@ -1,0 +1,14 @@
+[org/gnome/desktop/background]
+color-shading-type='solid'
+picture-options='zoom'
+picture-uri='file:///usr/share/backgrounds/solera/wallpaper.jpg'
+picture-uri-dark='file:///usr/share/backgrounds/solera/wallpaper.jpg'
+primary-color='#2b1810'
+secondary-color='#000000'
+
+[org/gnome/desktop/screensaver]
+color-shading-type='solid'
+picture-options='zoom'
+picture-uri='file:///usr/share/backgrounds/solera/wallpaper.jpg'
+primary-color='#2b1810'
+secondary-color='#000000'

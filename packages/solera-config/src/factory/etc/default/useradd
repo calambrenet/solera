@@ -1,0 +1,9 @@
+# useradd defaults
+# Defaults de Arch (paquete shadow) con SHELL cambiado a zsh para Solera.
+GROUP=100
+HOME=/home
+INACTIVE=-1
+EXPIRE=
+SHELL=/usr/bin/zsh
+SKEL=/etc/skel
+CREATE_MAIL_SPOOL=no

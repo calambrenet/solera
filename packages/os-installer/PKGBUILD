@@ -1,0 +1,68 @@
+# Maintainer: calambrenet <calambrenet@gmail.com>
+#
+# os-installer — empaquetado para el repositorio pacman de Solera.
+#
+# El instalador genérico de p3732 no está en los repos oficiales de Arch.
+# Solera lo redistribuye desde el upstream para no depender en runtime
+# de la infraestructura de Arkane.
+#
+# Upstream: https://github.com/p3732/os-installer
+
+pkgname=os-installer
+pkgver=0.3.0
+pkgrel=1
+_commit=3e99357ea5b9f4a55eed57aede998ac5f627d514
+pkgdesc='Distribution-independent GTK4/libadwaita installer (used by Solera via os-installer-config-solera)'
+arch=('x86_64')
+url='https://github.com/p3732/os-installer'
+license=('GPL-3.0-or-later')
+
+depends=(
+    'gtk4'
+    'libadwaita'
+    'python'
+    'python-gobject'
+    'python-yaml'
+    'glib2'
+)
+makedepends=(
+    'meson'
+    'ninja'
+    'git'
+    'gobject-introspection'
+    'blueprint-compiler'
+    'gettext'
+    'desktop-file-utils'
+    'appstream-glib'
+)
+# El upstream depende de blueprint-compiler como subproject git; lo aportamos
+# como makedepend para que meson no tire de red.
+options=('!debug')
+
+source=(
+    "$pkgname::git+$url.git#commit=$_commit"
+)
+sha256sums=('SKIP')
+
+build() {
+    cd "$srcdir/$pkgname"
+    # Equivalente a arch-meson sin depender de devtools: aplicamos los flags
+    # de Arch a mano. --wrap-mode=nodownload fuerza usar la blueprint-compiler
+    # del sistema (declarada en makedepends) en vez del subproject del wrap.
+    meson setup \
+        --prefix=/usr \
+        --libexecdir=lib \
+        --sbindir=bin \
+        --buildtype=plain \
+        --auto-features=enabled \
+        --wrap-mode=nodownload \
+        -Db_pie=true \
+        -Db_lto=true \
+        _build .
+    meson compile -C _build
+}
+
+package() {
+    cd "$srcdir/$pkgname"
+    DESTDIR="$pkgdir" meson install -C _build --no-rebuild
+}

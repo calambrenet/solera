@@ -1,0 +1,119 @@
+# Paquetes del entorno live de Solera. Su único trabajo es: arrancar GNOME,
+# ejecutar os-installer, llamar a arkdep para desplegar Solera. NO es Solera
+# entera.
+
+# Base + arranque
+base
+linux
+linux-firmware
+amd-ucode
+intel-ucode
+btrfs-progs
+dosfstools
+efibootmgr
+mkinitcpio
+mkinitcpio-archiso
+syslinux
+
+# Hardware
+sof-firmware
+fwupd
+power-profiles-daemon
+switcheroo-control
+
+# Drivers gráficos
+mesa
+intel-media-driver
+libva-mesa-driver
+vulkan-intel
+vulkan-nouveau
+vulkan-radeon
+vulkan-mesa-layers
+
+# Audio (pipewire stack)
+pipewire
+pipewire-alsa
+pipewire-audio
+pipewire-jack
+pipewire-pulse
+wireplumber
+gst-plugin-pipewire
+gst-plugins-base
+gst-plugins-good
+
+# Red
+networkmanager
+networkmanager-openconnect
+networkmanager-openvpn
+wpa_supplicant
+
+# Bluetooth
+bluez
+bluez-utils
+
+# Filesystems útiles para el instalador
+exfatprogs
+f2fs-tools
+xfsprogs
+
+# Utilidades del live
+arch-install-scripts
+bind
+debugedit
+diffutils
+findutils
+git
+glibc-locales
+htop
+less
+man-db
+nano
+neovim
+ex-vi-compat
+vim
+openssh
+pacman-contrib
+pv
+sudo
+tree
+which
+
+# Fuentes
+noto-fonts
+noto-fonts-cjk
+noto-fonts-emoji
+terminus-font
+
+# Escritorio (mínimo GNOME para el live + el instalador GTK)
+gdm
+gnome-backgrounds
+gnome-console
+gnome-control-center
+gnome-disk-utility
+gnome-keyring
+gnome-menus
+gnome-session
+gnome-settings-daemon
+gnome-shell
+gnome-tour
+mutter
+nautilus
+xdg-desktop-portal-gnome
+xdg-utils
+
+# Instalador
+os-installer
+os-installer-config-solera
+
+# Motor de despliegue
+arkdep
+solera-keyring
+
+# Comodidades en el live: si el usuario quiere probar GNOME sin instalar
+epiphany
+flatpak
+
+# Virtualización (para que la ISO arranque bien en QEMU/VBox)
+spice-vdagent
+qemu-guest-agent
+virtualbox-guest-utils-nox

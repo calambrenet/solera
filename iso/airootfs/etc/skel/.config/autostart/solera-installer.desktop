@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Install Solera
+Comment=Launch the Solera installer
+Exec=os-installer
+Icon=solera-logo
+Terminal=false
+Categories=System;

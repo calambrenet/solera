@@ -1,0 +1,28 @@
+#
+# Solera smoketest pacman.conf — TEMPLATE
+#
+# Igual que el de la receta `solera/` pero SIN el repo [solera] porque la
+# imagen smoketest no consume nada de él (no instala solera-meta).
+#
+# Tokens sustituidos por image/build-smoketest.sh:
+#   @ALA_DATE@   fecha YYYY/MM/DD del snapshot del Arch Linux Archive
+#
+
+[options]
+HoldPkg     = pacman glibc
+Architecture = auto
+Color
+ParallelDownloads = 5
+SigLevel    = Required DatabaseOptional
+LocalFileSigLevel = Optional
+
+# Anclamos la base de Arch a una fecha del Arch Linux Archive — esto es lo
+# que hace cada build reproducible bit a bit.
+[core]
+Server = https://archive.archlinux.org/repos/@ALA_DATE@/$repo/os/$arch
+
+[extra]
+Server = https://archive.archlinux.org/repos/@ALA_DATE@/$repo/os/$arch
+
+[multilib]
+Server = https://archive.archlinux.org/repos/@ALA_DATE@/$repo/os/$arch

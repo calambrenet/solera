@@ -1,0 +1,274 @@
+# Maintainer: calambrenet <calambrenet@gmail.com>
+#
+# solera-config: configuración, branding y defaults declarativos de Solera.
+#
+# Contiene:
+#   - dconf overrides (numlock, atajos, dash-to-dock, fondo)
+#   - /etc/skel mínimo
+#   - sysctl tweaks, deshabilitación de NetworkManager-wait-online
+#   - configuración inicial de ufw
+#   - servicio first-boot que pre-instala Flatpaks desde Flathub
+#   - bootstrap de Homebrew en PATH
+#   - branding de Solera (motd, os-release supplement)
+#
+# Esto NO incluye los archivos de Plymouth (un tema propio "solera" va aparte
+# si lo queremos personalizar; por ahora se hereda el del paquete plymouth).
+
+pkgname=solera-config
+pkgver=26.04
+pkgrel=32
+pkgdesc='Solera Linux defaults, branding and configuration overrides'
+arch=('any')
+url='https://github.com/calambrenet/solera'
+license=('GPL-3.0-or-later')
+
+# Dependencias propias (no de la imagen Solera entera, solo de este paquete)
+depends=(
+    'dconf'
+    'flatpak'
+    'libnotify'
+)
+
+# Scriptlet post-install: copia los archivos "factory" (que pisarían a paquetes
+# upstream — ufw, filesystem, bash, dconf) desde /usr/lib/solera-config/factory/
+# a /etc/. Pacman no detecta conflictos porque los archivos no se instalan
+# directamente en /etc/ desde este paquete.
+install=solera-config.install
+
+source=(
+    # Todo va en src/ junto al PKGBUILD; al construir lo copiamos al pkgdir.
+    # NOTA: el archivo .install referido por `install=` NO va aquí — makepkg
+    # lo empaqueta automáticamente sin necesidad de declararlo en source().
+)
+sha256sums=()
+
+package() {
+    cd "$startdir"
+
+    # ---- Factory (archivos que pisan a paquetes upstream) -----------------
+    # Estos NO se instalan en /etc/ directamente (pacman detectaría conflictos
+    # con dconf/filesystem/bash/ufw). Se aparcan bajo /usr/lib/solera-config/
+    # factory/ y los copia el scriptlet post_install al sistema.
+    declare -r factory="$pkgdir/usr/lib/solera-config/factory"
+
+    install -d "$factory/etc/dconf/profile"
+    install -m644 src/dconf/profile-user "$factory/etc/dconf/profile/user"
+
+    install -d "$factory/etc/skel"
+    install -m644 src/skel/.bash_profile "$factory/etc/skel/.bash_profile"
+    install -m644 src/skel/.bashrc       "$factory/etc/skel/.bashrc"
+    install -m644 src/skel/.zshrc        "$factory/etc/skel/.zshrc"
+    install -m644 src/skel/.p10k.zsh     "$factory/etc/skel/.p10k.zsh"
+
+    install -d "$factory/etc/default"
+    install -m644 src/etc/ufw-defaults             "$factory/etc/default/ufw"
+    # /etc/default/useradd lo posee el paquete `shadow`. Va por factory
+    # para fijar SHELL=/usr/bin/zsh cuando gnome-initial-setup cree al
+    # usuario.
+    install -m644 src/factory/etc/default/useradd  "$factory/etc/default/useradd"
+
+    install -d "$factory/etc"
+    install -m644 src/branding/os-release "$factory/etc/os-release"
+    install -m644 src/factory/etc/hostname "$factory/etc/hostname"
+
+    # Plymouth default theme (configura `plymouth-set-default-theme spinner`
+    # vía /etc/plymouth/plymouthd.conf). El paquete `plymouth` ya posee este
+    # path, por eso va en factory.
+    install -d "$factory/etc/plymouth"
+    install -m644 src/factory/etc/plymouth/plymouthd.conf \
+        "$factory/etc/plymouth/plymouthd.conf"
+
+    # ---- dconf overrides (sin conflicto: el /etc/dconf/db/solera.d/ no
+    #      existe en ningún paquete upstream, podemos instalarlo directo) ---
+    install -d "$pkgdir/etc/dconf/db/solera.d"
+    install -m644 src/dconf/db/00-keyboard      "$pkgdir/etc/dconf/db/solera.d/00-keyboard"
+    install -m644 src/dconf/db/01-dash-to-dock  "$pkgdir/etc/dconf/db/solera.d/01-dash-to-dock"
+    install -m644 src/dconf/db/02-shell         "$pkgdir/etc/dconf/db/solera.d/02-shell"
+    install -m644 src/dconf/db/03-background    "$pkgdir/etc/dconf/db/solera.d/03-background"
+    install -m644 src/dconf/db/04-color-scheme  "$pkgdir/etc/dconf/db/solera.d/04-color-scheme"
+    install -m644 src/dconf/db/05-wm            "$pkgdir/etc/dconf/db/solera.d/05-wm"
+    install -m644 src/dconf/db/06-console       "$pkgdir/etc/dconf/db/solera.d/06-console"
+    install -m644 src/dconf/db/07-blur-my-shell "$pkgdir/etc/dconf/db/solera.d/07-blur-my-shell"
+
+    # ---- dconf perfil GDM (logo, banner, fondo del greeter) ---------------
+    # El perfil 'gdm' es el del usuario virtual de GDM. /etc/dconf/profile/gdm
+    # y /etc/dconf/db/gdm.d/* NO los posee ningún paquete upstream (gdm solo
+    # ship /usr/share/gdm/), así que los instalamos directo en /etc/.
+    install -d "$pkgdir/etc/dconf/profile"
+    install -m644 src/dconf/profile-gdm "$pkgdir/etc/dconf/profile/gdm"
+
+    install -d "$pkgdir/etc/dconf/db/gdm.d"
+    install -m644 src/dconf/db/gdm.d/00-solera \
+        "$pkgdir/etc/dconf/db/gdm.d/00-solera"
+
+    # ---- /etc/profile.d ----------------------------------------------------
+    # Bootstrap de Homebrew: si /home/linuxbrew/.linuxbrew o ~/.linuxbrew
+    # existe, lo añade al PATH del usuario. No instala Homebrew, solo lo activa
+    # cuando el usuario lo ha bootstrapeado (su instalador es interactivo).
+    install -d "$pkgdir/etc/profile.d"
+    install -m644 src/etc/profile.d-homebrew.sh \
+        "$pkgdir/etc/profile.d/solera-homebrew.sh"
+
+    # ---- /etc tweaks: sysctl, NetworkManager ------------------------------
+    # ufw: /etc/default/ufw lo gestiona el scriptlet vía factory (conflict).
+    install -d "$pkgdir/etc/sysctl.d"
+    install -m644 src/etc/sysctl.d-99-solera.conf \
+        "$pkgdir/etc/sysctl.d/99-solera.conf"
+
+    # sudoers.d/wheel: el primer usuario (creado por gnome-initial-setup
+    # con -G wheel) tiene poderes sudo. /etc/sudoers de Arch ship la
+    # línea comentada por defecto. Modo 0440 obligatorio para sudo.
+    install -d "$pkgdir/etc/sudoers.d"
+    install -m440 src/sudoers.d/wheel "$pkgdir/etc/sudoers.d/wheel"
+
+    # systemd: acortar timeout de stop global (default 90s). Acelera el
+    # apagado cuando hay servicios atascados (malcontent-timer ignora SIGTERM,
+    # etc.). Ver el archivo para detalles.
+    install -d "$pkgdir/etc/systemd/system.conf.d"
+    install -m644 src/systemd-conf/solera-shutdown-timeout.conf \
+        "$pkgdir/etc/systemd/system.conf.d/solera-shutdown-timeout.conf"
+
+    # systemd: drop-in para user@.service. El default upstream TimeoutStopSec
+    # es 120s y NO lo pisa DefaultTimeoutStopSec del manager — hay que
+    # overridear por unit. Sin esto, un user manager atascado al apagar
+    # bloquea hasta 2 min. Ver el archivo para detalles.
+    install -d "$pkgdir/etc/systemd/system/user@.service.d"
+    install -m644 src/systemd-conf/user@.service.d/timeout.conf \
+        "$pkgdir/etc/systemd/system/user@.service.d/timeout.conf"
+
+    # sysusers.d: garantiza el usuario gdm. El paquete gdm de upstream en
+    # el snapshot ALA 2026/05/23 solo declaraba el grupo, así que GDM
+    # acababa corriendo su greeter bajo un UID efímero de nss-systemd.
+    # Este sysusers se procesa en arkdep-build vía systemd-sysusers
+    # (ver extensions/post_install.sh).
+    install -d "$pkgdir/usr/lib/sysusers.d"
+    install -m644 src/sysusers.d/solera-gdm.conf \
+        "$pkgdir/usr/lib/sysusers.d/solera-gdm.conf"
+
+    # ---- Servicios systemd: enable/disable defaults ------------------------
+    # En distros inmutables los enable se hacen creando los symlinks en /etc
+    # directamente (no se puede `systemctl enable` el sistema instalado en
+    # tiempo de build porque /usr es ro).
+    install -d "$pkgdir/etc/systemd/system/multi-user.target.wants"
+    ln -sf /usr/lib/systemd/system/ufw.service \
+        "$pkgdir/etc/systemd/system/multi-user.target.wants/ufw.service"
+    ln -sf /usr/lib/systemd/system/solera-first-boot.service \
+        "$pkgdir/etc/systemd/system/multi-user.target.wants/solera-first-boot.service"
+    # NetworkManager: sin este enable, no hay red al boot, GNOME no muestra
+    # icono de red y el sistema no tiene conectividad de salida.
+    ln -sf /usr/lib/systemd/system/NetworkManager.service \
+        "$pkgdir/etc/systemd/system/multi-user.target.wants/NetworkManager.service"
+    # bluez: el daemon de Bluetooth. Hay paneles GNOME para Bluetooth
+    # (gnome-bluetooth) que solo funcionan si el servicio está corriendo.
+    ln -sf /usr/lib/systemd/system/bluetooth.service \
+        "$pkgdir/etc/systemd/system/multi-user.target.wants/bluetooth.service"
+
+    # Boot a sesión gráfica por defecto (equivale a `systemctl set-default
+    # graphical.target`). Sin esto, default.target no existe → systemd cae
+    # a multi-user.target y aparece getty.
+    install -d "$pkgdir/etc/systemd/system"
+    ln -sf /usr/lib/systemd/system/graphical.target \
+        "$pkgdir/etc/systemd/system/default.target"
+
+    # Habilita GDM como display manager (equivale a `systemctl enable gdm`).
+    # `display-manager.service` es el nombre de servicio canónico que
+    # graphical.target busca.
+    ln -sf /usr/lib/systemd/system/gdm.service \
+        "$pkgdir/etc/systemd/system/display-manager.service"
+
+    # Deshabilitación explícita de NetworkManager-wait-online por mask
+    ln -sf /dev/null \
+        "$pkgdir/etc/systemd/system/NetworkManager-wait-online.service"
+
+    # malcontent-timer: el .service ignora SIGTERM al apagar (bug upstream
+    # conocido en libmalcontent). Bloquea el shutdown ~15s. Solera no usa
+    # los controles parentales: si alguien los activa explícitamente
+    # se reactiva el timer y el service; mientras tanto los enmascaramos
+    # tanto en .timer (activador) como en .service (defensa).
+    ln -sf /dev/null \
+        "$pkgdir/etc/systemd/system/malcontent-timer.timer"
+    ln -sf /dev/null \
+        "$pkgdir/etc/systemd/system/malcontent-timer.service"
+
+    # ---- Servicio first-boot: pre-instala Flatpaks desde Flathub ----------
+    install -d "$pkgdir/usr/lib/systemd/system"
+    install -m644 src/flatpak/solera-first-boot.service \
+        "$pkgdir/usr/lib/systemd/system/solera-first-boot.service"
+
+    install -d "$pkgdir/usr/libexec/solera"
+    install -m755 src/flatpak/solera-first-boot \
+        "$pkgdir/usr/libexec/solera/solera-first-boot"
+
+    install -d "$pkgdir/etc/solera"
+    install -m644 src/flatpak/flatpak.list "$pkgdir/etc/solera/flatpak.list"
+
+    # ---- Welcome app: GTK4 + libadwaita ----------------------------------
+    # Solo entrada de menú + acceso desde dash-to-dock (favorite-apps en
+    # 02-shell incluye solera-welcome.desktop). NO autostart: probamos
+    # esa ruta dos veces y en ambas la ventana se ponía encima del
+    # wizard de gnome-initial-setup robándole el foco y dejando el
+    # usuario sin crear. Patrón confirmado por openSUSE Aeon, que
+    # también ship solo el menú-entry.
+    install -m755 src/welcome/solera-welcome \
+        "$pkgdir/usr/libexec/solera/solera-welcome"
+
+    install -d "$pkgdir/usr/share/applications"
+    install -m644 src/welcome/solera-welcome.desktop \
+        "$pkgdir/usr/share/applications/solera-welcome.desktop"
+
+    # ---- /etc bootstrap: fusionar /usr/lib/{passwd,group,shadow} en /etc ---
+    # Necesario para que useradd (consume /etc/group directamente, no NSS)
+    # encuentre los grupos del sistema que arkdep-build mueve a /usr/lib.
+    # Sin este servicio, gnome-initial-setup falla con exit 6 al pasar
+    # `useradd -G wheel`.
+    install -m755 src/etc-bootstrap/solera-etc-bootstrap \
+        "$pkgdir/usr/libexec/solera/solera-etc-bootstrap"
+    install -m644 src/etc-bootstrap/solera-etc-bootstrap.service \
+        "$pkgdir/usr/lib/systemd/system/solera-etc-bootstrap.service"
+
+    # Enable via symlink en sysinit.target.wants (correr muy pronto,
+    # antes de cualquier consumidor de /etc/passwd|group).
+    install -d "$pkgdir/etc/systemd/system/sysinit.target.wants"
+    ln -sf /usr/lib/systemd/system/solera-etc-bootstrap.service \
+        "$pkgdir/etc/systemd/system/sysinit.target.wants/solera-etc-bootstrap.service"
+
+    # ---- zram swap ---------------------------------------------------------
+    # Evitamos zram-generator de momento: en las pruebas generaba una espera
+    # por /dev/zram0. Este servicio configura zram de forma explícita y no
+    # participa en local-fs.target, así que no puede bloquear /home.
+    install -d "$pkgdir/etc/modules-load.d"
+    install -m644 src/modules-load/zram.conf \
+        "$pkgdir/etc/modules-load.d/zram.conf"
+
+    install -m755 src/zram/solera-zram-setup \
+        "$pkgdir/usr/libexec/solera/solera-zram-setup"
+    install -m644 src/zram/solera-zram.service \
+        "$pkgdir/usr/lib/systemd/system/solera-zram.service"
+    ln -sf /usr/lib/systemd/system/solera-zram.service \
+        "$pkgdir/etc/systemd/system/multi-user.target.wants/solera-zram.service"
+
+    # ---- Branding: fondos -------------------------------------------------
+    # os-release lo lleva el scriptlet vía factory (conflict con filesystem).
+    # NOTA: /etc/motd se quitó deliberadamente — pam_motd lo renderiza en
+    # GDM durante el login (área de mensajes PAM) y queda muy feo. El
+    # branding al primer login se hace vía la app de bienvenida (Tanda C).
+    install -d "$pkgdir/usr/share/backgrounds/solera"
+    install -m644 src/branding/wallpaper.jpg \
+        "$pkgdir/usr/share/backgrounds/solera/wallpaper.jpg"
+
+    install -d "$pkgdir/usr/share/pixmaps"
+    install -m644 src/branding/solera-logo.svg \
+        "$pkgdir/usr/share/pixmaps/solera-logo.svg"
+
+    # Variante cuadrada (solo el sol) para iconos de aplicación en grids
+    # cuadrados. .desktop files que usen `Icon=solera-logo` (nombre corto)
+    # encontrarán esta versión vía icon-theme lookup; los que pasan path
+    # absoluto /usr/share/pixmaps/solera-logo.svg siguen usando el banner.
+    install -d "$pkgdir/usr/share/icons/hicolor/scalable/apps"
+    install -m644 src/branding/solera-icon.svg \
+        "$pkgdir/usr/share/icons/hicolor/scalable/apps/solera-logo.svg"
+
+    # ---- Hook post-install: dconf update -----------------------------------
+    # No hace falta hook: arkdep ejecuta `dconf update` en el post_install de
+    # la receta (ver image/arkdep-build.d/solera/extensions/post_install.sh).
+}

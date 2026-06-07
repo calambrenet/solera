@@ -1,0 +1,13 @@
+NAME="Solera"
+PRETTY_NAME="Solera Linux"
+ID=solera
+ID_LIKE=arch
+BUILD_ID=rolling
+ANSI_COLOR="38;2;255;165;0"
+HOME_URL="https://soleralinux.org"
+DOCUMENTATION_URL="https://github.com/calambrenet/solera"
+SUPPORT_URL="https://github.com/calambrenet/solera/issues"
+BUG_REPORT_URL="https://github.com/calambrenet/solera/issues"
+LOGO=solera-logo
+VARIANT="GNOME"
+VARIANT_ID=gnome

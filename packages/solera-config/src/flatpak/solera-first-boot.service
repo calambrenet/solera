@@ -1,0 +1,13 @@
+[Unit]
+Description=Solera first-boot Flatpak preinstall
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=!/var/lib/solera/first-boot.done
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/solera/solera-first-boot
+RemainAfterExit=no
+
+[Install]
+WantedBy=multi-user.target

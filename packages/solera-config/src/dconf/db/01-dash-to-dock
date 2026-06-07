@@ -1,0 +1,10 @@
+[org/gnome/shell/extensions/dash-to-dock]
+dock-position='BOTTOM'
+dash-max-icon-size=48
+background-opacity=0.80
+height-fraction=0.90
+show-mounts=false
+show-mounts-only-mounted=true
+disable-overview-on-startup=true
+click-action='minimize'
+scroll-action='switch-workspace'

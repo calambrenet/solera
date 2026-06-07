@@ -1,0 +1,15 @@
+
+  Solera Linux
+  ============
+
+  Una distribución inmutable y atómica basada en Arch. Cada release es
+  reproducible bit a bit; cada actualización es transaccional con rollback.
+
+  Recordatorio:
+    - Apps GUI:        flatpak install flathub <app-id>
+    - Desarrollo:      distrobox-create / distrobox-enter
+    - CLI personal:    brew install <utilidad>
+    - Sistema:         arkdep update   (luego reinicia)
+
+  Comando 'solera-help' en un terminal para más atajos.
+
