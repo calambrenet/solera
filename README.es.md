@@ -28,7 +28,7 @@ La imagen raíz se mantiene mínima e idéntica entre máquinas. El software viv
 | Sistema base | la imagen | kernel, GNOME, servicios — solo cambia con una actualización completa + reinicio |
 | Apps gráficas | **Flatpak** (Flathub preconfigurado) | navegadores, editores, apps de usuario |
 | Entornos de desarrollo y CLI | **Distrobox** + **Homebrew** | compiladores, runtimes, herramientas de línea de comandos, en espacio de usuario |
-| Escape al host | `arkdep layer` | drivers, módulos de kernel, clientes VPN corporativos |
+| Escape al host | `solera layer` | drivers, módulos de kernel, clientes VPN corporativos |
 
 ## Instalación
 
@@ -40,14 +40,20 @@ La imagen raíz se mantiene mínima e idéntica entre máquinas. El software viv
 
 ## Actualizar
 
-Cuando el canal público esté activo, actualizar es:
+Solera se gestiona con el comando `solera`, un front-end del motor de
+despliegue `arkdep`. Cuando el canal público esté activo, actualizar es:
 
 ```bash
-sudo arkdep update   # despliega la imagen nueva como un subvolumen separado
+sudo solera update   # despliega la última imagen como un subvolumen separado
 sudo reboot          # arranca en él; el despliegue anterior queda para rollback
 ```
 
-Las apps gráficas se actualizan de forma independiente vía Flatpak.
+Otros comandos: `solera layer <pkg>` añade paquetes nativos sobre la imagen,
+`solera list` muestra las imágenes disponibles, `solera cleanup` borra
+deployments antiguos. Ejecuta `solera help` para la lista completa.
+
+Las apps gráficas se actualizan aparte vía Flatpak; las herramientas CLI de
+usuario vía Homebrew.
 
 ## Construir desde el código
 

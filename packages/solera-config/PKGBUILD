@@ -16,7 +16,7 @@
 
 pkgname=solera-config
 pkgver=26.04
-pkgrel=32
+pkgrel=33
 pkgdesc='Solera Linux defaults, branding and configuration overrides'
 arch=('any')
 url='https://github.com/calambrenet/solera'
@@ -198,6 +198,13 @@ package() {
     install -d "$pkgdir/usr/libexec/solera"
     install -m755 src/flatpak/solera-first-boot \
         "$pkgdir/usr/libexec/solera/solera-first-boot"
+
+    # ---- CLI `solera`: front-end de arkdep --------------------------------
+    # `solera update` → `arkdep deploy` (despliega la última imagen),
+    # `solera layer/unlayer`, `solera list`, etc. Es lo que muestran la web
+    # y los README; arkdep no tiene un comando `update` propio.
+    install -d "$pkgdir/usr/bin"
+    install -m755 src/solera-cli/solera "$pkgdir/usr/bin/solera"
 
     install -d "$pkgdir/etc/solera"
     install -m644 src/flatpak/flatpak.list "$pkgdir/etc/solera/flatpak.list"

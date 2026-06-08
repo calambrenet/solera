@@ -28,7 +28,7 @@ The root image stays minimal and identical across machines. Software lives in la
 | Base system | the image | kernel, GNOME, services — changes only with a full update + reboot |
 | GUI apps | **Flatpak** (Flathub preconfigured) | browsers, editors, end-user apps |
 | Dev environments & CLI | **Distrobox** + **Homebrew** | compilers, runtimes, command-line tools, in user space |
-| Host-level escape hatch | `arkdep layer` | drivers, kernel modules, corporate VPN clients |
+| Host-level escape hatch | `solera layer` | drivers, kernel modules, corporate VPN clients |
 
 ## Installation
 
@@ -40,14 +40,19 @@ The root image stays minimal and identical across machines. Software lives in la
 
 ## Updating
 
-Once the public channel is live, updating is:
+Solera is managed with the `solera` command, a small front-end over the
+`arkdep` deployment engine. Once the public channel is live, updating is:
 
 ```bash
-sudo arkdep update   # deploys the new image as a separate subvolume
+sudo solera update   # deploys the latest image as a separate subvolume
 sudo reboot          # boot into it; the old deployment stays for rollback
 ```
 
-GUI apps update independently through Flatpak.
+Other commands: `solera layer <pkg>` adds native packages onto the image,
+`solera list` shows the available images, `solera cleanup` removes old
+deployments. Run `solera help` for the full list.
+
+GUI apps update independently through Flatpak; user CLI tools through Homebrew.
 
 ## Building from source
 

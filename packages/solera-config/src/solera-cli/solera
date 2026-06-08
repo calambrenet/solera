@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+# solera — front-end de Solera para el motor de despliegue arkdep.
+#
+# Da nombres más intuitivos a los comandos de arkdep que un usuario de
+# escritorio usa a diario, y pasa el resto directamente a arkdep. No
+# reimplementa nada: solo traduce y delega.
+#
+#   solera update            actualiza el sistema (despliega la última imagen)
+#   solera layer <pkg>...    añade paquetes nativos sobre la imagen
+#   solera unlayer <pkg>...  quita paquetes layered
+#   solera list              lista las imágenes disponibles en el repo
+#   solera layers            lista los paquetes layered actuales
+#   solera cleanup           elimina deployments antiguos
+#   solera rollback          explica cómo volver al deployment anterior
+#   solera <otro>...         se pasa tal cual a arkdep
+#
+# Las operaciones que modifican el sistema (update, layer, unlayer,
+# cleanup) requieren root: arkdep lo comprueba y aborta si no lo tiene.
+# La web y la documentación muestran `sudo solera update`.
+
+set -euo pipefail
+
+readonly ENGINE='arkdep'
+
+usage() {
+    cat <<'EOF'
+solera — gestiona el sistema Solera (front-end de arkdep)
+
+Uso:
+  solera update              Actualiza Solera a la última imagen del repo.
+                             Se aplica al reiniciar; el deployment anterior
+                             queda para rollback.
+  solera layer <pkg>...      Añade paquetes nativos sobre la imagen (drivers,
+                             módulos de kernel, VPN corporativa). Se aplica
+                             al reiniciar.
+  solera unlayer <pkg>...    Quita paquetes previamente añadidos con layer.
+  solera list                Muestra las imágenes disponibles en el repo.
+  solera layers              Muestra los paquetes layered actuales.
+  solera cleanup             Borra deployments antiguos para liberar espacio.
+  solera rollback            Cómo volver al deployment anterior.
+  solera help                Esta ayuda.
+
+Cualquier otro comando se pasa tal cual a arkdep. Las apps gráficas se
+actualizan aparte con Flatpak; las herramientas de usuario con brew.
+EOF
+}
+
+main() {
+    if ! command -v "$ENGINE" >/dev/null 2>&1; then
+        printf 'solera: no se encontró %s en el PATH\n' "$ENGINE" >&2
+        exit 1
+    fi
+
+    local cmd="${1:-help}"
+    case "$cmd" in
+        update)
+            # deploy sin target despliega repo_default_image:latest = actualizar
+            shift
+            exec "$ENGINE" deploy "$@"
+            ;;
+        layer)
+            shift
+            exec "$ENGINE" layer "$@"
+            ;;
+        unlayer)
+            shift
+            exec "$ENGINE" unlayer "$@"
+            ;;
+        list)
+            exec "$ENGINE" get-available
+            ;;
+        layers)
+            exec "$ENGINE" layer-ls
+            ;;
+        cleanup)
+            exec "$ENGINE" cleanup
+            ;;
+        rollback)
+            cat <<'EOF'
+El deployment anterior sigue en disco. Para volver a él, reinicia y
+elígelo en el menú de systemd-boot al arrancar. Una vez dentro, puedes
+fijarlo como predeterminado con:
+
+    sudo solera update -    (vuelve a desplegar; o usa el menú de boot)
+
+Solera no borra el deployment anterior hasta que ejecutas `solera cleanup`.
+EOF
+            ;;
+        help|-h|--help)
+            usage
+            ;;
+        *)
+            # Passthrough: cualquier subcomando de arkdep no cubierto arriba.
+            exec "$ENGINE" "$@"
+            ;;
+    esac
+}
+
+main "$@"
