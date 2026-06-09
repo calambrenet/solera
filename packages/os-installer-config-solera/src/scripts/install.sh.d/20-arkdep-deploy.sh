@@ -32,6 +32,22 @@ root_uuid=$(sudo blkid -o value -s UUID "$root_blk") \
 #    (incluido /arkdep/overlay como subvol vacío).
 sudo ARKDEP_ROOT="$workdir" arkdep init || quit_on_err 'arkdep init falló'
 
+# 2.1) Sembrar el keyring de verificación de imágenes. arkdep init deja
+#      /arkdep/keys/trusted-keys vacío (un `touch`); con gpg_signature_check=2
+#      (required, parcheado en el paquete arkdep) `arkdep deploy`/`solera
+#      update` aborta si no puede verificar la firma de la imagen. La pubkey
+#      de Solera ya está en el live vía solera-keyring; gpgv usa el mismo
+#      formato de keyring binario que exporta gpg, así que la copiamos tal
+#      cual. /arkdep es subvolumen shared → persiste en el sistema instalado.
+readonly SOLERA_PUBKEY='/usr/share/pacman/keyrings/solera.gpg'
+if [[ -s "$SOLERA_PUBKEY" ]]; then
+    sudo install -d -m755 "$workdir/arkdep/keys"
+    sudo install -m644 "$SOLERA_PUBKEY" "$workdir/arkdep/keys/trusted-keys" \
+        || quit_on_err 'No se pudo sembrar /arkdep/keys/trusted-keys'
+else
+    quit_on_err "Pubkey de Solera no encontrada en $SOLERA_PUBKEY (¿solera-keyring instalado en el live?)"
+fi
+
 # 2.5) Sobrescribir el template systemd-boot que arkdep init dejó por
 #      defecto. Razones:
 #      - El default upstream tiene `root="LABEL=arkane_root"` y title

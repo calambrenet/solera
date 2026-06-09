@@ -12,7 +12,7 @@
 
 pkgname=arkdep
 pkgver=2025.12.18
-pkgrel=1
+pkgrel=2
 pkgdesc='Toolkit for building, deploying and maintaining a btrfs-based multi-root system (Solera build)'
 arch=('any')
 url='https://codeberg.org/arkanelinux/arkdep'
@@ -20,6 +20,28 @@ license=('GPL-3.0-or-later')
 depends=('curl' 'wget' 'btrfs-progs' 'dracut' 'systemd' 'gnupg' 'arch-install-scripts')
 source=("$pkgname-$pkgver.tar.gz::https://codeberg.org/arkanelinux/arkdep/archive/$pkgver.tar.gz")
 sha256sums=('976dff83fbcb17830313c20e51bff05188d8faba0d5ccdced7764a8c85f04a6b')
+
+prepare() {
+    cd "$srcdir/$pkgname"
+
+    # Solera apunta los defaults de arkdep a su propio repo de imágenes y
+    # exige verificación de firma GPG (2 = required). Estos defaults son los
+    # que `arkdep init` escribe en /arkdep/config, así que el sistema
+    # instalado consume el repo de Solera y rechaza imágenes sin firmar
+    # sin más configuración. Se parchea aquí (no en runtime) para que el
+    # binario empaquetado ya los lleve.
+    sed -i \
+        -e "s|^declare -r dist_repo_url=.*|declare -r dist_repo_url='https://repo.soleralinux.org/stable/images'|" \
+        -e "s|^declare -r dist_repo_default_image=.*|declare -r dist_repo_default_image='solera'|" \
+        -e "s|^declare -r dist_gpg_signature_check=.*|declare -r dist_gpg_signature_check=2|" \
+        arkdep
+
+    # Verificar que el sed acertó (falla ruidosamente si upstream renombra).
+    grep -q "dist_repo_url='https://repo.soleralinux.org/stable/images'" arkdep \
+        || { printf 'prepare: el parche de dist_repo_url no se aplicó\n' >&2; return 1; }
+    grep -q "dist_gpg_signature_check=2" arkdep \
+        || { printf 'prepare: el parche de dist_gpg_signature_check no se aplicó\n' >&2; return 1; }
+}
 
 package() {
     cd "$srcdir/$pkgname"
