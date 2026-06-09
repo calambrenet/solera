@@ -1,0 +1,7 @@
+# Code owners for Solera Linux.
+#
+# Every pull request is automatically assigned to the owner(s) below for
+# review. See https://docs.github.com/articles/about-code-owners
+#
+# The whole repository is owned by the maintainer.
+* @calambrenet
