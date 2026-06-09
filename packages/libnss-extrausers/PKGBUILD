@@ -1,4 +1,4 @@
-# Maintainer: calambrenet <calambrenet@gmail.com>
+# Maintainer: José Luis Castro <info@soleralinux.org>
 #
 # libnss-extrausers — módulo NSS que añade /usr/lib/{passwd,group,shadow}
 # como segunda fuente de cuentas de usuario, además de /etc/.

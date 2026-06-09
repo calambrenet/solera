@@ -105,6 +105,11 @@ public issue).
 
 Website: [www.soleralinux.org](https://www.soleralinux.org)
 
+## Maintainer
+
+Maintained by **José Luis Castro** (<info@soleralinux.org>). Supported by
+[HappyAndroids](https://happyandroids.com). See [AUTHORS](AUTHORS).
+
 ## License
 
 [GPL-3.0-or-later](LICENSE), matching upstream Arch / Arkane.

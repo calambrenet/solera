@@ -106,6 +106,11 @@ normas de la comunidad. Problemas de seguridad: ver [SECURITY.md](SECURITY.md)
 
 Web: [www.soleralinux.org](https://www.soleralinux.org)
 
+## Mantenedor
+
+Mantenido por **José Luis Castro** (<info@soleralinux.org>). Con el apoyo de
+[HappyAndroids](https://happyandroids.com). Ver [AUTHORS](AUTHORS).
+
 ## Licencia
 
 [GPL-3.0-or-later](LICENSE), en coherencia con upstream Arch / Arkane.
