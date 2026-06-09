@@ -81,8 +81,27 @@ sudo chmod 0644 "$workdir/arkdep/overlay/etc/fstab"
 sudo cp "$bundle_file" "$workdir/arkdep/cache/" \
     || quit_on_err 'No se pudo copiar el bundle a la cache de arkdep'
 
+# 4.5) El bundle de la ISO no va firmado. arkdep init escribió el config con
+#      gpg_signature_check=2 (required, parcheado en el paquete arkdep), así
+#      que un `deploy cache` aborta pidiendo la firma del bundle. La firma
+#      obligatoria protege los UPDATES por red (`solera update`), donde un
+#      repo comprometido o un MITM sí son una amenaza; el deploy INICIAL es
+#      desde la ISO que el usuario booteó, que es el medio de confianza.
+#      Relajamos el check solo para este deploy desde cache y lo restauramos
+#      a 2 para que el sistema instalado exija firma en los updates.
+sudo sed -i 's/^gpg_signature_check=.*/gpg_signature_check=0/' \
+    "$workdir/arkdep/config" \
+    || quit_on_err 'No se pudo relajar gpg_signature_check para el deploy inicial'
+
 # 5) Deploy desde cache. Para entonces 15-systemd-boot.sh ya ha poblado
 #    $workdir/boot/loader/entries/, que es donde arkdep escribe la entrada
 #    del kernel desplegado. arkdep aplicará /arkdep/overlay sobre rootfs/.
 sudo ARKDEP_ROOT="$workdir" arkdep deploy cache "$deployment_id" \
     || quit_on_err 'arkdep deploy cache falló'
+
+# 5.5) Restaurar la firma obligatoria para el sistema instalado. /arkdep es
+#      subvolumen shared, así que este config persiste y `solera update`
+#      rechazará cualquier imagen sin firma válida.
+sudo sed -i 's/^gpg_signature_check=.*/gpg_signature_check=2/' \
+    "$workdir/arkdep/config" \
+    || quit_on_err 'No se pudo restaurar gpg_signature_check a 2'
