@@ -13,7 +13,7 @@
 
 pkgname=os-installer-config-solera
 pkgver=0.1.0
-pkgrel=11
+pkgrel=12
 pkgdesc='os-installer configuration for installing Solera Linux via arkdep'
 arch=('any')
 url='https://github.com/calambrenet/solera'

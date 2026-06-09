@@ -19,14 +19,20 @@ bundle_file=$(ls "$BUNDLE_DIR"/solera-*.tar.zst 2>/dev/null | head -1)
 # la convención de naming de arkdep-build (variant-build-<timestamp>).
 deployment_id=$(basename "$bundle_file" .tar.zst)
 
-# Solo necesitamos root_uuid: se usa en el cmdline `options root=UUID=...`
-# del template systemd-boot Y en las entradas fstab de los subvols btrfs.
-# El ESP no está en fstab — systemd-gpt-auto-generator genera el automount
-# lazy basándose en el GPT partition type que pone part.sfdisk.
+# UUIDs para fstab y bootloader:
+#   - root_uuid: cmdline `options root=UUID=...` del template systemd-boot
+#     y entradas fstab de los subvols btrfs.
+#   - boot_uuid: entrada fstab de /boot (ESP). Va con x-systemd.automount
+#     (ver overlay_arkdep/etc/fstab) para que arkdep pueda escribir el kernel
+#     en el ESP sin bloquear el arranque.
 root_uuid=$(sudo blkid -o value -s UUID "$root_blk") \
     || quit_on_err "No se pudo obtener UUID de root ($root_blk)"
 [[ -n "$root_uuid" ]] \
     || quit_on_err 'UUID de root vacío tras formatear'
+boot_uuid=$(sudo blkid -o value -s UUID "$esp") \
+    || quit_on_err "No se pudo obtener UUID de boot ($esp)"
+[[ -n "$boot_uuid" ]] \
+    || quit_on_err 'UUID de boot vacío tras formatear'
 
 # 2) Inicializar arkdep en el target. Crea /arkdep + subvolúmenes shared
 #    (incluido /arkdep/overlay como subvol vacío).
@@ -72,6 +78,7 @@ EOF
 #    Arkane (configure.sh.d/02-overlay.sh) y persiste en futuros deploys.
 sudo install -d -m755 "$workdir/arkdep/overlay/etc"
 sed -e "s|@ROOT_UUID@|$root_uuid|g" \
+    -e "s|@BOOT_UUID@|$boot_uuid|g" \
     "$osidir/overlay_arkdep/etc/fstab" | \
     sudo tee "$workdir/arkdep/overlay/etc/fstab" >/dev/null \
         || quit_on_err 'No se pudo sembrar fstab en /arkdep/overlay'
