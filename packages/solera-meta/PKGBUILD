@@ -8,7 +8,7 @@
 
 pkgname=solera-meta
 pkgver=26.04
-pkgrel=15
+pkgrel=16
 pkgdesc='Solera Linux meta-package: declares every package that composes Solera'
 arch=('any')
 url='https://github.com/calambrenet/solera'
@@ -214,6 +214,8 @@ depends=(
     'ex-vi-compat'       # provee /usr/bin/vi (BSD vi clásico vía vim compat)
     'less'               # paginador; git lo usa para log/diff/show
     'htop'
+    'screenfetch'        # info del sistema con branding del sol de Solera
+                          # (logo + nombre via wrapper en solera-config)
     'man-db'
     'man-pages'
     'tree'

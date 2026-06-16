@@ -35,6 +35,8 @@ file_permissions=(
     ["/etc/gshadow"]="0:0:400"
     ["/etc/sudoers"]="0:0:400"
     ["/root"]="0:0:750"
+    # Wrapper de screenfetch (sale de airootfs/, por eso el modo va aquí).
+    ["/usr/local/bin/screenfetch"]="0:0:755"
     # Los scripts de /etc/os-installer los aporta el paquete
     # os-installer-config-solera (ya con -m755 en el PKGBUILD), no airootfs/.
     # No los listamos aquí: mkarchiso solo acepta paths que existan en

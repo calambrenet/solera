@@ -1,0 +1,15 @@
+#!/bin/sh
+# Solera: envoltorio de screenfetch.
+#
+# Fuerza el logo del sol (-a) y el nombre de la distro (-D). Solera no esta
+# registrada en el screenfetch de upstream, asi que sin -a/-D mostraria el logo
+# generico y, ademas, screenfetch pasa el nombre a minusculas internamente y
+# solo recapitaliza las distros que conoce: por eso recuperamos "Solera Linux"
+# con sed (el pipe conserva el color).
+#
+# Vive en /usr/local/bin, que precede a /usr/bin en el PATH, de modo que
+# `screenfetch` a secas usa este wrapper. Flags extra del usuario ("$@") van
+# despues y pueden sobrescribir estos defaults.
+/usr/bin/screenfetch -D 'Solera Linux' \
+    -a /usr/share/solera/screenfetch/solera-logo.sh "$@" \
+    | sed 's/solera linux/Solera Linux/'

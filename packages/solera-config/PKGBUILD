@@ -16,7 +16,7 @@
 
 pkgname=solera-config
 pkgver=26.04
-pkgrel=33
+pkgrel=34
 pkgdesc='Solera Linux defaults, branding and configuration overrides'
 arch=('any')
 url='https://github.com/calambrenet/solera'
@@ -208,6 +208,16 @@ package() {
 
     install -d "$pkgdir/etc/solera"
     install -m644 src/flatpak/flatpak.list "$pkgdir/etc/solera/flatpak.list"
+
+    # ---- screenfetch: logo del sol + nombre de la distro ------------------
+    # El logo ASCII va a /usr/share/solera/screenfetch/ y un wrapper en
+    # /usr/local/bin/screenfetch (precede a /usr/bin en PATH) llama al
+    # screenfetch real con -a (logo) y -D (nombre). Ver el wrapper para por
+    # qué recapitalizamos el nombre con sed. screenfetch lo aporta solera-meta.
+    install -Dm644 src/screenfetch/solera-logo.sh \
+        "$pkgdir/usr/share/solera/screenfetch/solera-logo.sh"
+    install -Dm755 src/screenfetch/screenfetch \
+        "$pkgdir/usr/local/bin/screenfetch"
 
     # ---- Welcome app: GTK4 + libadwaita ----------------------------------
     # Solo entrada de menú + acceso desde dash-to-dock (favorite-apps en

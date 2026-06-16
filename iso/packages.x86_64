@@ -112,6 +112,8 @@ solera-keyring
 # Comodidades en el live: si el usuario quiere probar GNOME sin instalar
 epiphany
 flatpak
+# screenfetch con branding del sol (logo + wrapper van en airootfs/)
+screenfetch
 
 # Virtualización (para que la ISO arranque bien en QEMU/VBox)
 spice-vdagent
