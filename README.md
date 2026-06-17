@@ -103,7 +103,7 @@ workflow and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for community standards.
 Security issues: see [SECURITY.md](SECURITY.md) (report privately, not in a
 public issue).
 
-Website: [www.soleralinux.org](https://www.soleralinux.org)
+Website: [www.soleralinux.org](https://www.soleralinux.org) · [Changelog](CHANGELOG.md)
 
 ## Maintainer
 
