@@ -25,7 +25,10 @@ set -euo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"   # .../solera
 IMAGE="${IMAGE:-solera-build:full}"
 OUT="${OUT:-$REPO/out-full}"
-VARTMP="${VARTMP:-$REPO/.buildwork}"
+# Scratch dir (volumen /var/tmp del contenedor) FUERA del repo a propósito:
+# mkarchiso/arkdep-build dejan aquí ficheros root-owned (archiso-work, loop
+# image) que no deben acabar bajo el repo montado en /src.
+VARTMP="${VARTMP:-${XDG_CACHE_HOME:-$HOME/.cache}/solera-buildwork}"
 RUN_UID="$(id -u)"; RUN_GID="$(id -g)"
 
 mkdir -p "$OUT" "$VARTMP"

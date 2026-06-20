@@ -73,21 +73,23 @@ mkdir -p "$OUT"
 # ---------------------------------------------------------------------------
 log "Preparando copia writable del repo en $SRCDIR"
 rm -rf "$SRCDIR"; mkdir -p "$SRCDIR"
-cp -a "$SRC/." "$SRCDIR/"
-rm -rf "$SRCDIR/.git"   # no necesitamos la historia en la copia de build
-
-# (a) Borra entradas gitignoradas (pkg/, src/ de build, tarballs, target/,
-#     work/, out/…). Distinguir por gitignore preserva los src/ que son PAYLOAD
-#     trackeado (p.ej. os-installer-config-solera).
+# Copiar SOLO lo trackeado + lo no-ignorado por git. Esto excluye .git y todo
+# lo gitignorado (out-full/, .buildwork/, target/, work/, pkg/, los src/ de
+# build, tarballs descargados…) SIN intentar leerlo. Es clave: builds previos
+# dejan en esos dirs ficheros root-owned modo 000 (p.ej. .buildwork/
+# archiso-work/.../etc/shadow) que un `cp -a` como builder no puede leer y
+# abortaría con "Permission denied". Los src/ que son PAYLOAD trackeado (p.ej.
+# os-installer-config-solera) SÍ se copian, porque git los trackea.
 if git -C "$SRC" rev-parse --git-dir >/dev/null 2>&1; then
-    while IFS= read -r rel; do
-        [[ -n "$rel" ]] && rm -rf "$SRCDIR/$rel"
-    done < <(git -C "$SRC" -c safe.directory='*' ls-files \
-                 --others --ignored --exclude-standard --directory)
+    git -C "$SRC" -c safe.directory='*' ls-files -z --cached --others --exclude-standard \
+        | tar -C "$SRC" --null -T - -cf - \
+        | tar -C "$SRCDIR" -xf -
+else
+    cp -a "$SRC/." "$SRCDIR/" && rm -rf "$SRCDIR/.git"
 fi
-# (b) Borra clones git bare TRACKEADOS con rutas absolutas obsoletas (el mirror
-#     commiteado packages/os-installer/os-installer/). makepkg re-clona desde
-#     la URL upstream.
+# Borra clones git bare TRACKEADOS con rutas absolutas obsoletas (el mirror
+# commiteado packages/os-installer/os-installer/). makepkg re-clona desde la
+# URL upstream.
 while IFS= read -r headf; do
     d=$(dirname "$headf")
     [[ -d "$d/objects" ]] && rm -rf "$d"
