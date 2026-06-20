@@ -5,6 +5,13 @@ target/
 out/
 work/
 
+# Salida y workdir del build en contenedor (build/run-*.sh):
+# out-pkgs/ (solo paquetes), out-full/ (paquetes+imagen+ISO), .buildwork/
+# (volumen /var/tmp con el loop image btrfs y el work/ de mkarchiso).
+out-pkgs/
+out-full/
+.buildwork/
+
 # Tarballs descargados por makepkg en source=(...) — viven en
 # packages/<pkg>/ pero NUNCA se commitea (se re-descargan al construir).
 *.tar.gz

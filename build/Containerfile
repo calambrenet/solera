@@ -1,0 +1,35 @@
+# Containerfile — contenedor de build de Solera
+#
+# El host Solera es inmutable (read-only), así que NO se construye en él.
+# Esta imagen lleva toda la toolchain necesaria para construir los paquetes
+# propios con makepkg (y, más adelante, la imagen con arkdep-build y la ISO
+# con mkarchiso).
+#
+# Construir:
+#     podman build -t solera-build:test -f build/Containerfile .
+#
+# Ver build/run-build-test.sh para el lanzamiento (prueba mínima: solo
+# construye los 11 paquetes propios).
+FROM archlinux:latest
+
+# Toolchain. base-devel trae makepkg, fakeroot y debugedit (los dos que
+# faltan en la imagen de Solera). El resto son las makedepends de los
+# paquetes propios (makepkg se invoca con --nodeps, así que las makedepends
+# tienen que estar ya presentes en el entorno).
+RUN pacman -Syu --noconfirm --needed \
+        base-devel git pacman-contrib \
+        meson ninja blueprint-compiler gobject-introspection gettext \
+        desktop-file-utils appstream-glib gtk4 libadwaita \
+        python python-gobject python-yaml glib2 sassc \
+        arch-install-scripts btrfs-progs dracut dosfstools \
+        archiso squashfs-tools libisoburn erofs-utils mtools \
+    && pacman -Scc --noconfirm
+
+# makepkg rehúsa correr como root. Creamos un usuario con uid 1000 para que,
+# lanzado con `podman run --userns=keep-id`, mapee al usuario del host
+# (calambrenet, uid 1000) y los artefactos en /out salgan con su propiedad.
+RUN useradd -m -u 1000 builder \
+    && echo 'builder ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/builder
+
+USER builder
+WORKDIR /home/builder
