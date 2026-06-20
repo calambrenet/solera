@@ -8,6 +8,47 @@ and this project adheres to `YY.MM` versioning pinned to an
 
 ## [Unreleased]
 
+## [26.06.1] — 2026-06-20
+
+Maintenance release. Tag: `v26.06.1`. ISO: `solera-2026.06.20-x86_64.iso` (~4.1 GB).
+Image: `solera-26-04-build-20260620-075443.tar.zst` (~2.0 GB).
+
+### Added
+
+- `rclone` — cloud storage sync, added to the default package set (`solera-meta`).
+- `github-cli` (`gh`) — official GitHub CLI, added to the default package set.
+- Containerized build pipeline (`build/Containerfile`, `scripts/ci-build.sh`,
+  `build/run-build-test.sh`, `build/run-full-build.sh`): builds packages, image
+  and ISO in a privileged podman container, since the host now runs Solera
+  (immutable, read-only) and can no longer host the build toolchain. Supersedes
+  host-based `rebuild-solera.sh`.
+- `build/test-iso-qemu.sh` — headless QEMU/UEFI boot-test harness for the ISO.
+
+### Fixed
+
+- Container build copies only git-tracked files (avoids permission errors from
+  root-owned scratch left by previous builds) and exposes the host `/dev` so the
+  loop mounts of `arkdep-build`/`mkarchiso` work under `--privileged`.
+
+### Package highlights
+
+| Component | Version |
+|---|---|
+| Linux kernel | 7.0.12.arch1 |
+| GNOME (Shell / Mutter) | 50.2 |
+| Mesa | 26.1.2 |
+| systemd | 260.2 |
+| glibc | 2.43 |
+| NetworkManager | 1.56.1 |
+| PipeWire / WirePlumber | 1.6.6 / 0.5.14 |
+| Podman | 5.8.3 |
+| Flatpak | 1.18.0 |
+| GTK | 4.22.4 |
+| rclone | 1.74.3 |
+| github-cli | 2.95.0 |
+
+934 packages in the image.
+
 ## [26.06] — 2026-06-16
 
 Second alpha. Tag: `v26.06`. ISO: `solera-2026.06.16-x86_64.iso` (~4.0 GB).
@@ -67,6 +108,7 @@ Initial public alpha. Tag: `v0.1.0-alpha`. First commit with project skeleton.
 - `solera-diseno-tecnico.md`: authoritative technical design document.
 - `docs-privados/inventario-maquina.md`: package inventory from the developer's machine.
 
-[Unreleased]: https://github.com/calambrenet/solera/compare/v26.06...HEAD
+[Unreleased]: https://github.com/calambrenet/solera/compare/v26.06.1...HEAD
+[26.06.1]: https://github.com/calambrenet/solera/compare/v26.06...v26.06.1
 [26.06]: https://github.com/calambrenet/solera/compare/v0.1.0-alpha...v26.06
 [26.04]: https://github.com/calambrenet/solera/releases/tag/v0.1.0-alpha
