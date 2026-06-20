@@ -1,0 +1,6 @@
+# Containerfile.vmtest — imagen mínima para probar el arranque de la ISO de
+# Solera en QEMU/UEFI dentro de un contenedor (el host Solera es inmutable y
+# no trae qemu). Se ejecuta con --device /dev/kvm para aceleración.
+FROM archlinux:latest
+RUN pacman -Syu --noconfirm --needed qemu-base edk2-ovmf socat \
+    && pacman -Scc --noconfirm

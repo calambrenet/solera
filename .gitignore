@@ -10,6 +10,8 @@ work/
 # (volumen /var/tmp con el loop image btrfs y el work/ de mkarchiso).
 out-pkgs/
 out-full/
+# Salida del harness de boot-test en QEMU (build/test-iso-qemu.sh).
+.vmtest/
 .buildwork/
 
 # Tarballs descargados por makepkg en source=(...) — viven en
