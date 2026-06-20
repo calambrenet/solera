@@ -8,7 +8,7 @@
 
 pkgname=solera-meta
 pkgver=26.04
-pkgrel=16
+pkgrel=17
 pkgdesc='Solera Linux meta-package: declares every package that composes Solera'
 arch=('any')
 url='https://github.com/calambrenet/solera'
@@ -209,6 +209,7 @@ depends=(
     'curl'
     'wget'
     'git'
+    'github-cli'         # CLI oficial de GitHub (gh)
     'nano'
     'vim'
     'ex-vi-compat'       # provee /usr/bin/vi (BSD vi clásico vía vim compat)
@@ -224,6 +225,7 @@ depends=(
     'tmux'
     'screen'
     'rsync'
+    'rclone'             # sync a almacenamiento en la nube (rsync para la nube)
     'sshfs'              # montar SSH como FUSE
 
     # ---- Modernización de coreutils ---------------------------------------
