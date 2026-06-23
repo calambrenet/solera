@@ -8,7 +8,7 @@
 
 pkgname=solera-meta
 pkgver=26.04
-pkgrel=17
+pkgrel=18
 pkgdesc='Solera Linux meta-package: declares every package that composes Solera'
 arch=('any')
 url='https://github.com/calambrenet/solera'
@@ -177,6 +177,7 @@ depends=(
     'gnome-shell-extension-dash-to-dock'
     'gnome-shell-extension-blur-my-shell'
     'gnome-shell-extension-compiz-alike-magic-lamp-effect'
+    'gnome-shell-extension-solera-update'   # indicador gráfico de actualización
 
     # ---- Flatpak / Flathub -------------------------------------------------
     'flatpak'

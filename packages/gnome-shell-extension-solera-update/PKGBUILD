@@ -1,0 +1,52 @@
+# Maintainer: José Luis Castro <info@soleralinux.org>
+#
+# gnome-shell-extension-solera-update — indicador gráfico de actualizaciones
+# de Solera en la barra superior de GNOME. Comprueba si hay nueva imagen del
+# repo (arkdep), avisa, lanza el despliegue vía pkexec (diálogo polkit), anima
+# el icono mientras despliega y ofrece reiniciar al terminar.
+#
+# El código vive en su propio repo (calambrenet/gnome-shell-extension-solera-
+# update); aquí solo anclamos un tag y lo instalamos a nivel de sistema en
+# /usr/share/gnome-shell/extensions/, igual que el resto de extensiones de
+# Solera. La activación por defecto la hace solera-config (dconf override).
+
+pkgname=gnome-shell-extension-solera-update
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='Top-bar indicator to update Solera (arkdep) — system-wide install for Solera'
+arch=('any')
+url='https://github.com/calambrenet/gnome-shell-extension-solera-update'
+license=('GPL-2.0-or-later')
+# gnome-shell para la extensión; solera-config provee el comando `solera`
+# (front-end de arkdep) que invoca el wrapper privilegiado.
+depends=('gnome-shell' 'solera-config')
+makedepends=('gettext')
+_uuid='solera-update@soleralinux.org'
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+package() {
+    cd "$srcdir/$pkgname-$pkgver"
+
+    local extdir="$pkgdir/usr/share/gnome-shell/extensions/$_uuid"
+
+    # Núcleo de la extensión
+    install -Dm644 -t "$extdir" \
+        extension.js updateChecker.js metadata.json stylesheet.css
+
+    # Icono del sol (se carga como GFileIcon desde la extensión)
+    install -Dm644 -t "$extdir/icons" icons/solera-symbolic.svg
+
+    # Wrapper privilegiado: lo ejecuta pkexec, fija ARKDEP_CONFIRM y llama a
+    # `solera update`. Debe ser ejecutable.
+    install -Dm755 -t "$extdir/lib" lib/solera-gui-update
+
+    # Traducciones: po/<lang>.po -> locale/<lang>/LC_MESSAGES/<domain>.mo
+    local po lang
+    for po in po/*.po; do
+        [ -e "$po" ] || continue
+        lang="$(basename "$po" .po)"
+        install -dm755 "$extdir/locale/$lang/LC_MESSAGES"
+        msgfmt "$po" -o "$extdir/locale/$lang/LC_MESSAGES/$_uuid.mo"
+    done
+}
