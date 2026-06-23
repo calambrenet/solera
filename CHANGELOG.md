@@ -8,6 +8,47 @@ and this project adheres to `YY.MM` versioning pinned to an
 
 ## [Unreleased]
 
+## [26.06.2] — 2026-06-23
+
+Feature release. Tag: `v26.06.2`. ISO: `solera-2026.06.23-x86_64.iso` (~4.1 GB).
+Image: `solera-26-04-build-20260623-153431.tar.zst` (~2.0 GB).
+
+### Added
+
+- `gnome-shell-extension-solera-update` (v0.1.0) — top-bar indicator that checks
+  for new Solera images via `arkdep`, notifies the user, launches the deployment
+  through a `pkexec` polkit dialog, animates the icon while deploying, and offers
+  to reboot when finished. Installed system-wide and enabled by default via a
+  `solera-config` dconf override (`enabled-extensions`).
+- `gnome-shell-extension-solera-update` added to the build package list of
+  `scripts/ci-build.sh` (and `rebuild-solera.sh`) so the containerized build
+  pipeline produces and publishes it to the localrepo.
+
+### Changed
+
+- ALA snapshot bumped from `2026/06/15` to `2026/06/22`, pulling in minor
+  upstream package refreshes (Mesa, PipeWire, WirePlumber, …).
+
+### Package highlights
+
+| Component | Version |
+|---|---|
+| Linux kernel | 7.0.12.arch1 |
+| GNOME (Shell / Mutter) | 50.2 |
+| Mesa | 26.1.3 |
+| systemd | 260.2 |
+| glibc | 2.43 |
+| NetworkManager | 1.56.1 |
+| PipeWire / WirePlumber | 1.6.7 / 0.5.15 |
+| Podman | 5.8.3 |
+| Flatpak | 1.18.0 |
+| GTK | 4.22.4 |
+| rclone | 1.74.3 |
+| github-cli | 2.95.0 |
+| Solera Update extension | 0.1.0 |
+
+935 packages in the image.
+
 ## [26.06.1] — 2026-06-20
 
 Maintenance release. Tag: `v26.06.1`. ISO: `solera-2026.06.20-x86_64.iso` (~4.1 GB).
