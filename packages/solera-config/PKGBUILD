@@ -11,12 +11,14 @@
 #   - bootstrap de Homebrew en PATH
 #   - branding de Solera (motd, os-release supplement)
 #
-# Esto NO incluye los archivos de Plymouth (un tema propio "solera" va aparte
-# si lo queremos personalizar; por ahora se hereda el del paquete plymouth).
+# Incluye el tema Plymouth propio "solera": una copia del tema "spinner" de
+# Arch con el watermark sustituido por el logo de Solera (el mismo SVG que usa
+# GDM), de modo que el splash de boot y el greeter de login muestran el mismo
+# logo. Ver la sección "Plymouth theme" en package().
 
 pkgname=solera-config
 pkgver=26.04
-pkgrel=35
+pkgrel=36
 pkgdesc='Solera Linux defaults, branding and configuration overrides'
 arch=('any')
 url='https://github.com/calambrenet/solera'
@@ -27,6 +29,13 @@ depends=(
     'dconf'
     'flatpak'
     'libnotify'
+)
+
+# Para construir el tema Plymouth: 'plymouth' aporta el tema 'spinner' base que
+# clonamos; 'librsvg' (rsvg-convert) rasteriza el watermark desde el SVG.
+makedepends=(
+    'plymouth'
+    'librsvg'
 )
 
 # Scriptlet post-install: copia los archivos "factory" (que pisarían a paquetes
@@ -71,8 +80,8 @@ package() {
     install -m644 src/branding/os-release "$factory/etc/os-release"
     install -m644 src/factory/etc/hostname "$factory/etc/hostname"
 
-    # Plymouth default theme (configura `plymouth-set-default-theme spinner`
-    # vía /etc/plymouth/plymouthd.conf). El paquete `plymouth` ya posee este
+    # Plymouth default theme: fija Theme=solera vía /etc/plymouth/plymouthd.conf
+    # (el tema solera se instala más abajo). El paquete `plymouth` ya posee este
     # path, por eso va en factory.
     install -d "$factory/etc/plymouth"
     install -m644 src/factory/etc/plymouth/plymouthd.conf \
@@ -284,6 +293,34 @@ package() {
     install -d "$pkgdir/usr/share/icons/hicolor/scalable/apps"
     install -m644 src/branding/solera-icon.svg \
         "$pkgdir/usr/share/icons/hicolor/scalable/apps/solera-logo.svg"
+
+    # ---- Plymouth theme 'solera' ------------------------------------------
+    # Tema propio = copia del tema 'spinner' de Arch con el watermark
+    # sustituido por el logo de Solera. El path themes/solera/ no lo posee
+    # ningún paquete upstream (plymouth ship themes/spinner/), así que se
+    # instala directo en /usr/share sin conflicto ni factory.
+    #
+    # El watermark se rasteriza del MISMO solera-logo.svg que usa GDM, para
+    # que el logo del splash de boot y el del greeter de login coincidan.
+    # Se mantiene todo lo demás del spinner (throbber, entrada de password
+    # LUKS, barra de progreso) heredado de upstream.
+    declare -r theme="$pkgdir/usr/share/plymouth/themes/solera"
+    install -d "$theme"
+    cp -rT /usr/share/plymouth/themes/spinner "$theme"
+
+    # Reescribe metadatos y ImageDir al path propio; colapsa los Name[xx]
+    # traducidos del spinner a un único Name=Solera.
+    sed -i \
+        -e 's|^ImageDir=.*|ImageDir=/usr/share/plymouth/themes/solera|' \
+        -e 's|^Description=.*|Description=Solera boot splash.|' \
+        -e '/^Name\[/d' \
+        -e 's|^Name=.*|Name=Solera|' \
+        "$theme/spinner.plymouth"
+    mv "$theme/spinner.plymouth" "$theme/solera.plymouth"
+
+    # Watermark = logo de Solera (mismo SVG que GDM), 320px de ancho.
+    rsvg-convert -w 320 src/branding/solera-logo.svg \
+        -o "$theme/watermark.png"
 
     # ---- Hook post-install: dconf update -----------------------------------
     # No hace falta hook: arkdep ejecuta `dconf update` en el post_install de

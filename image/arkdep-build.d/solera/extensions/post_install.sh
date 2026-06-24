@@ -28,17 +28,21 @@ arch-chroot "$workdir" systemd-sysusers || \
 #    binarios en su sitio. En la máquina destino, arkdep + el instalador
 #    invocan `bootctl install`.
 
-# 3) Plymouth: integramos el hook en dracut Y activamos el tema "spinner"
-#    como default. solera-config ya escribe /etc/plymouth/plymouthd.conf
-#    vía su factory; `plymouth-set-default-theme` re-genera initramfs.
+# 3) Plymouth: integramos el hook en dracut Y activamos el tema "solera"
+#    (lo aporta solera-config: copia del spinner con el logo de Solera) como
+#    default. solera-config ya escribe /etc/plymouth/plymouthd.conf vía su
+#    factory; aquí fijamos el symlink de tema por defecto ANTES de que
+#    arkdep-build genere el initramfs con dracut, para que el módulo plymouth
+#    empaquete el tema solera (no el spinner de Arch).
 mkdir -p "$workdir/etc/dracut.conf.d"
 cat > "$workdir/etc/dracut.conf.d/10-solera-plymouth.conf" <<'EOF'
 add_dracutmodules+=" plymouth "
 EOF
 
-# Aplica el tema por defecto. -R re-genera el initramfs en sitio.
-# Si falla (no hay tema o dracut no está), no rompemos el build.
-arch-chroot "$workdir" plymouth-set-default-theme spinner || true
+# Fija el tema por defecto (actualiza el symlink default.plymouth + conf).
+# Sin -R: el initramfs lo regenera arkdep-build con dracut después, y el
+# módulo plymouth lee el tema por defecto en ese momento.
+arch-chroot "$workdir" plymouth-set-default-theme solera || true
 
 # 4) Activar plymouth-quit etc. — al ser una imagen ya construida, el preset
 #    de systemd se aplica vía /etc del solera-config (ya hecho).

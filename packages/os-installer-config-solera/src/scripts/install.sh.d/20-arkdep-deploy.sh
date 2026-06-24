@@ -68,7 +68,7 @@ sudo tee "$workdir/arkdep/templates/systemd-boot" >/dev/null <<EOF
 title Solera Linux
 linux /arkdep/%target%/vmlinuz
 initrd /arkdep/%target%/initramfs-linux.img
-options root="UUID=$root_uuid" rootflags=subvol=/arkdep/deployments/%target%/rootfs rw quiet
+options root="UUID=$root_uuid" rootflags=subvol=/arkdep/deployments/%target%/rootfs rw quiet splash
 EOF
 
 # 3) Sembrar /arkdep/overlay con el fstab plantilla. Durante "arkdep deploy"

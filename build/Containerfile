@@ -23,6 +23,7 @@ RUN pacman -Syu --noconfirm --needed \
         python python-gobject python-yaml glib2 sassc \
         arch-install-scripts btrfs-progs dracut dosfstools \
         archiso squashfs-tools libisoburn erofs-utils mtools \
+        plymouth librsvg \
     && pacman -Scc --noconfirm
 
 # makepkg rehúsa correr como root. Creamos un usuario con uid 1000 para que,
