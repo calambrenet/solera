@@ -45,6 +45,13 @@ packages/zsh-theme-powerlevel10k/src/
 packages/solera-config/src/solera-config.install
 packages/os-installer/src/
 
+# Localrepo generado por repo-add (solera.db/.files + paquetes). Todo es
+# output de build; el repo pacman real vive en R2.
+localrepo/
+
+# Logs de build (build/build.log, etc.).
+*.log
+
 # Editor / IDE
 *.swp
 *.swo
