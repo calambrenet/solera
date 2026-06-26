@@ -8,6 +8,51 @@ and this project adheres to `YY.MM` versioning pinned to an
 
 ## [Unreleased]
 
+## [26.06.3] — 2026-06-26
+
+Feature release. Tag: `v26.06.3`. ISO: `solera-2026.06.26-x86_64.iso` (~4.1 GB).
+Image: `solera-26-04-build-20260626-152035.tar.zst` (~2.0 GB).
+
+### Added
+
+- Plymouth boot splash branded with the Solera logo. `solera-config` now ships a
+  custom `solera` Plymouth theme — a clone of Arch's `spinner` with the Solera sun
+  logo as the watermark, rasterized from the same `solera-logo.svg` used by GDM —
+  sets `Theme=solera` in `plymouthd.conf`, and runs `plymouth-set-default-theme
+  solera` before dracut packages the initramfs. The installer now writes
+  `rw quiet splash` on the kernel command line so Plymouth starts in graphical
+  mode. Boot and login logos now match. (New installations only; already-installed
+  systems need a one-line template patch — see `docs/STATUS.md`.)
+- `gnome-shell-extension-solera-update` v0.1.1 — gates the first update check on
+  network connectivity, avoiding a spurious "no updates" notification on first
+  boot before the network is up.
+
+### Changed
+
+- ALA snapshot bumped forward, pulling `linux` 7.0.12.arch1 → 7.0.13.arch1 and
+  `systemd` 260.2 → 261, plus minor upstream refreshes.
+- `solera-config` 26.04-36 (Plymouth theme), `solera-meta` 26.04-18.
+
+### Package highlights
+
+| Component | Version |
+|---|---|
+| Linux kernel | 7.0.13.arch1 |
+| GNOME (Shell / Mutter) | 50.2 |
+| Mesa | 26.1.3 |
+| systemd | 261 |
+| glibc | 2.43 |
+| NetworkManager | 1.56.1 |
+| PipeWire / WirePlumber | 1.6.7 / 0.5.15 |
+| Podman | 5.8.3 |
+| Flatpak | 1.18.0 |
+| GTK | 4.22.4 |
+| rclone | 1.74.3 |
+| github-cli | 2.95.0 |
+| Solera Update extension | 0.1.1 |
+
+935 packages in the image.
+
 ## [26.06.2] — 2026-06-23
 
 Feature release. Tag: `v26.06.2`. ISO: `solera-2026.06.23-x86_64.iso` (~4.1 GB).
