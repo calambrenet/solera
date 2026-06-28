@@ -18,7 +18,7 @@
 
 pkgname=solera-config
 pkgver=26.04
-pkgrel=36
+pkgrel=37
 pkgdesc='Solera Linux defaults, branding and configuration overrides'
 arch=('any')
 url='https://github.com/calambrenet/solera'

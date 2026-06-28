@@ -1,14 +1,18 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
 """
 solera-welcome — ventana de bienvenida que aparece al primer login GUI.
 
+Shebang con ruta absoluta al intérprete del sistema (NO `/usr/bin/env
+python3`): PyGObject (`gi`) sólo existe en el Python de Arch. Si el usuario
+tiene Homebrew/pyenv/conda delante en el PATH, `env python3` resolvería a un
+intérprete sin `gi` y la app fallaría con "No module named 'gi'".
+
 Diseño minimalista en GTK4 + libadwaita: muestra logo, descripción breve,
 los cuatro comandos clave de Solera (flatpak, distrobox, brew, arkdep),
-y enlaces a documentación. Marker file en ~/.config/solera/welcome-shown
-para no mostrarse de nuevo.
+y enlaces a documentación.
 
-Lanzado por /etc/xdg/autostart/solera-welcome.desktop al primer login en
-una sesión GNOME.
+Se lanza manualmente desde el menú de aplicaciones (solera-welcome.desktop);
+no hay autostart ni marker file, así que no suprime su propia reaparición.
 """
 
 import os
