@@ -20,6 +20,20 @@ source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zs
 fpath=(/usr/share/zsh/site-functions $fpath)
 autoload -Uz compinit && compinit
 
+# ---- Historial ---------------------------------------------------------
+# zsh NO persiste el historial por defecto: hay que definir estas variables.
+HISTFILE="$HOME/.zsh_history"
+HISTSIZE=50000          # comandos cargados en memoria por sesión
+SAVEHIST=50000          # comandos guardados en disco (si es 0, no guarda nada)
+
+setopt SHARE_HISTORY        # comparte el historial entre sesiones abiertas
+setopt INC_APPEND_HISTORY   # escribe cada comando al instante, no al cerrar
+setopt HIST_IGNORE_DUPS     # no guarda un comando si es igual al anterior
+setopt HIST_IGNORE_ALL_DUPS # elimina duplicados antiguos
+setopt HIST_IGNORE_SPACE    # ignora comandos que empiezan con espacio
+setopt HIST_REDUCE_BLANKS   # limpia espacios redundantes
+setopt EXTENDED_HISTORY     # guarda timestamp de cada comando
+
 # History substring search con flechas arriba/abajo.
 source /usr/share/zsh/plugins/zsh-history-substring-search/zsh-history-substring-search.zsh
 bindkey '^[[A' history-substring-search-up
