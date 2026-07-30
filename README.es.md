@@ -6,15 +6,15 @@
 
 Solera entrega el sistema operativo como una imagen versionada y reproducible, no como una máquina que configuras a mano. El sistema raíz es de solo lectura, las actualizaciones son transaccionales con rollback gratuito, y todo lo que define el sistema vive en este repositorio Git.
 
-Usa [`arkdep`](https://github.com/arkanelinux/arkdep) como motor de despliegue (imágenes de subvolúmenes Btrfs, el mismo motor de Arkane Linux) y sigue un flujo de construcción basado en imagen: definir en Git → construir en CI → publicar un artefacto firmado y versionado.
+Usa [`arkdep`](https://github.com/arkanelinux/arkdep) como motor de despliegue (imágenes de subvolúmenes Btrfs, el mismo motor de Arkane Linux) y sigue un flujo basado en imagen: la distribución completa se define en este repositorio, se construye con los scripts públicos que contiene sobre infraestructura controlada por el proyecto, y se publica como un artefacto firmado y versionado. Cada release se ancla a un snapshot datado del [Arch Linux Archive](https://archive.archlinux.org/), de modo que sus inputs de construcción son inmutables y cualquiera puede reconstruirla y verificarla de forma independiente — ver [REPRODUCING.md](REPRODUCING.md).
 
-> **Estado: alpha.** Solera arranca, se instala y funciona, pero el canal público de actualizaciones y el pipeline de CI aún se están montando. Todavía no está listo para uso diario.
+> **Estado: alpha.** Solera arranca, se instala y funciona, y su mantenedor la usa a diario. Las imágenes se construyen y firman con los scripts públicos de build y se publican en [repo.soleralinux.org](https://repo.soleralinux.org) con checksums y firmas; las actualizaciones del sistema llegan por el canal público vía `solera update`. Aún no se recomienda para máquinas de producción — pruébala antes en una VM o en una máquina secundaria.
 
 ## Características
 
 - **Raíz inmutable** — `/usr` es de solo lectura; el sistema no puede derivar fuera de un estado conocido.
 - **Actualizaciones atómicas con rollback** — una actualización despliega un nuevo subvolumen Btrfs y cambia a él al reiniciar. El despliegue anterior permanece en disco; volver atrás es elegir la entrada antigua en el menú de arranque.
-- **Releases reproducibles** — cada release se construye contra un snapshot fijo del [Arch Linux Archive](https://archive.archlinux.org/), de modo que reconstruir una versión produce la misma imagen.
+- **Releases verificables** — cada release se construye contra un snapshot fijo del [Arch Linux Archive](https://archive.archlinux.org/); cualquiera puede reconstruir una release desde su tag de Git y verificar los artefactos publicados (ver [REPRODUCING.md](REPRODUCING.md)).
 - **Escritorio GNOME** con dash-to-dock, blur-my-shell y magic-lamp activados por defecto.
 - **systemd-boot** (solo UEFI), Btrfs con compresión zstd, swap en zram.
 - Audio **PipeWire**, splash de arranque **Plymouth**.
@@ -41,7 +41,8 @@ La imagen raíz se mantiene mínima e idéntica entre máquinas. El software viv
 ## Actualizar
 
 Solera se gestiona con el comando `solera`, un front-end del motor de
-despliegue `arkdep`. Cuando el canal público esté activo, actualizar es:
+despliegue `arkdep`. Las actualizaciones se descargan del canal público,
+se verifican (firma GPG + SHA256) y se despliegan de forma atómica:
 
 ```bash
 sudo solera update   # despliega la última imagen como un subvolumen separado
@@ -57,22 +58,39 @@ usuario vía Homebrew.
 
 ## Construir desde el código
 
-La distribución completa — paquetes, imagen del sistema e ISO instaladora — se construye localmente sin infraestructura en la nube:
+La distribución completa — paquetes, imagen del sistema e ISO instaladora — se construye localmente sin infraestructura en la nube. El build corre dentro de un contenedor podman (definido en [`build/Containerfile`](build/Containerfile)), así que la distro del host no importa:
 
 ```bash
-bash scripts/build-iso-local.sh   # construye los paquetes propios, la imagen y la ISO
+bash build/run-full-build.sh   # construye los paquetes propios, la imagen y la ISO
 ```
 
-Después prueba en QEMU:
+Los artefactos quedan en `out-full/`. Después prueba en QEMU:
 
 ```bash
 qemu-system-x86_64 -enable-kvm -m 4G -smp 4 \
     -bios /usr/share/edk2/x64/OVMF.4m.fd \
-    -drive file=out/solera-*.iso,format=raw,media=cdrom \
+    -drive file=out-full/solera-*.iso,format=raw,media=cdrom \
     -drive file=test.qcow2,if=virtio
 ```
 
 Ver [`image/README.md`](image/README.md) y [`iso/README.md`](iso/README.md) para los detalles de construcción.
+
+## Releases y verificación
+
+Solera no depende de CI en nubes de terceros: las imágenes se construyen en infraestructura controlada por el proyecto, con exactamente los scripts publicados en este repositorio. La confianza no viene de ver correr un pipeline alojado — viene de la verificación independiente:
+
+- **Releases versionadas.** Cada release se etiqueta en Git y aparece en la [página de Releases](https://github.com/calambrenet/solera/releases) con su changelog y los checksums de los artefactos publicados.
+- **Inputs anclados.** Cada release se construye contra un snapshot fijo y datado del Arch Linux Archive, registrado en el tag de la release en [`image/arkdep-build.d/solera/pacman.conf`](image/arkdep-build.d/solera/pacman.conf), de modo que los inputs de paquetes son inmutables y públicos.
+- **Salida reconstruible.** Cualquiera puede reconstruir una release desde su tag contra el mismo snapshot anclado y comparar el resultado — [REPRODUCING.md](REPRODUCING.md) documenta el procedimiento exacto y su alcance actual.
+- **Artefactos firmados.** Las imágenes publicadas llevan checksum SHA256 y firma GPG separada. La clave pública de release vive en este repositorio en [`keys/solera-release.pub`](keys/solera-release.pub) (huella `2A6B 615A 08E0 0125 0DAC 48BE DCDA 556A 3BC6 04A8`).
+
+Los artefactos se sirven desde [repo.soleralinux.org](https://repo.soleralinux.org):
+
+```
+https://repo.soleralinux.org/stable/iso/solera-latest-x86_64.iso
+https://repo.soleralinux.org/stable/iso/solera-latest-x86_64.iso.sha256
+https://repo.soleralinux.org/stable/iso/solera-latest-x86_64.iso.sig
+```
 
 ## Estructura del repositorio
 
@@ -88,8 +106,10 @@ solera/
 │   └── gnome-shell-extension-*/      Extensiones GNOME incluidas
 ├── image/                    Receta arkdep-build de la imagen del sistema
 ├── iso/                      Perfil archiso de la ISO instaladora
-├── scripts/build-iso-local.sh    Construcción local end-to-end
-└── .github/workflows/        Pipeline CI/CD
+├── build/                    Entorno de build en contenedor (Containerfile + runners)
+├── scripts/                  Orquestación del build (corre dentro del contenedor)
+├── keys/                     Clave pública de firma de releases
+└── .github/workflows/        CI experimental (no se usa para releases)
 ```
 
 ## Versionado
