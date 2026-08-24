@@ -8,6 +8,40 @@ and this project adheres to `YY.MM` versioning pinned to an
 
 ## [Unreleased]
 
+## [26.08] — 2026-08-24
+
+Maintenance release. Tag: `v26.08`. ISO: `solera-<TODO>-x86_64.iso` (~<TODO> GB).
+Image: `solera-26-04-build-<TODO>.tar.zst` (~<TODO> GB).
+
+### Changed
+
+- `iso/pacman.conf` now renders from `iso/pacman.conf.template` at build time,
+  anchored to the same Arch Linux Archive snapshot (`SOLERA_ALA_DATE`) as the
+  system image — the live ISO's kernel now matches the installed image's
+  kernel exactly, instead of tracking whatever Arch mirrors serve "today".
+- `solera-welcome` now launches manually from the app menu instead of
+  autostarting on first login; shebang pinned to `/usr/bin/python3` so it
+  always uses Arch's interpreter, not a Homebrew/pyenv/conda one missing
+  PyGObject (`solera-config` 26.04-37).
+- Documented the release verification model: rewritten README/README.es,
+  new `REPRODUCING.md`, published signing pubkey (`keys/solera-release.pub`).
+
+### Fixed
+
+- zsh command history now persists across reboots — `/etc/skel/.zshrc` was
+  missing `HISTFILE`/`SAVEHIST`, so history was lost on every login.
+
+### Package highlights
+
+| Component | Version |
+|---|---|
+| Linux kernel | TODO — fill in after the build |
+| GNOME (Shell / Mutter) | TODO |
+| Mesa | TODO |
+| systemd | TODO |
+| glibc | TODO |
+| NetworkManager | TODO |
+
 ## [26.06.3] — 2026-06-26
 
 Feature release. Tag: `v26.06.3`. ISO: `solera-2026.06.26-x86_64.iso` (~4.1 GB).
