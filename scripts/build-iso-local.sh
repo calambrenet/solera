@@ -9,8 +9,10 @@
 #   2. Construye los 4 paquetes propios necesarios para la ISO:
 #         arkdep, solera-keyring, os-installer, os-installer-config-solera
 #   3. Monta un repositorio pacman local en /tmp/solera-localrepo/x86_64.
-#   4. Genera un iso/pacman.conf temporal apuntando a ese repo local con
-#      SigLevel=Optional TrustAll (no firmamos en local).
+#   4. Genera iso/pacman.conf desde iso/pacman.conf.template, anclando
+#      [core]/[extra]/[multilib] al mismo snapshot del Arch Linux Archive
+#      (SOLERA_ALA_DATE) que la imagen del sistema. El [solera] block apunta
+#      al localrepo con SigLevel=Optional TrustAll (no firmamos en local).
 #   5. Invoca mkarchiso → ./out/solera-*.iso
 #
 # Uso:
@@ -110,24 +112,17 @@ done
 ls -la "$LOCALREPO/$ARCH/"
 
 # -----------------------------------------------------------------------------
-# 4) pacman.conf temporal apuntando al repo local
+# 4) pacman.conf renderizado desde el .template (anclado al ALA)
 # -----------------------------------------------------------------------------
-log "Adaptando iso/pacman.conf"
-cp "$ROOT/iso/pacman.conf" "$ROOT/iso/pacman.conf.bak"
-
-# Sustituye el bloque [solera] entero por uno local-friendly.
-python3 - "$ROOT/iso/pacman.conf" "$LOCALREPO/$ARCH" <<'PY'
-import re, sys
-path, repo = sys.argv[1], sys.argv[2]
-with open(path) as f: s = f.read()
-new_block = f"""[solera]
-SigLevel = Optional TrustAll
-Server = file://{repo}
-"""
-s = re.sub(r'\[solera\][^\[]*', new_block, s, flags=re.DOTALL)
-with open(path, 'w') as f: f.write(s)
-print(s.split('[solera]')[1].split('[')[0] if '[solera]' in s else 'no [solera] block found')
-PY
+# Mismo patrón que image/build.sh: el .template es la fuente de verdad y el
+# iso/pacman.conf renderizado es un artefacto de build (gitignored). Se ancla
+# al mismo snapshot del Arch Linux Archive que la imagen del sistema, así el
+# kernel del live y el de la imagen desplegada coinciden.
+source "$ROOT/scripts/ala-date.sh"
+resolve_ala_date || die 'No se pudo resolver SOLERA_ALA_DATE (snapshot del Arch Linux Archive)'
+log "Renderizando iso/pacman.conf con ALA date=$SOLERA_ALA_DATE"
+sed "s#@ALA_DATE@#${SOLERA_ALA_DATE}#g" \
+    "$ROOT/iso/pacman.conf.template" > "$ROOT/iso/pacman.conf"
 
 # -----------------------------------------------------------------------------
 # 4.5) Bundle de la imagen del sistema (Fase 2)
@@ -162,8 +157,9 @@ mkdir -p "$OUTDIR"
 log "Lanzando mkarchiso (esto tarda 10-20 min)"
 sudo mkarchiso -v -w "$WORKDIR" -o "$OUTDIR" "$ROOT/iso/"
 
-# Restaura pacman.conf
-mv "$ROOT/iso/pacman.conf.bak" "$ROOT/iso/pacman.conf"
+# Limpia el pacman.conf renderizado (no se commitea; el .template es la
+# fuente de verdad).
+rm -f "$ROOT/iso/pacman.conf"
 
 log "Listo. Artefactos:"
 ls -la "$OUTDIR/"

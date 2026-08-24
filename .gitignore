@@ -23,6 +23,11 @@ out-full/
 # *.template SÍ se commitea, el rendered NO.
 image/arkdep-build.d/*/pacman.conf
 
+# iso/pacman.conf renderizado desde iso/pacman.conf.template por
+# scripts/build-iso-local.sh y scripts/ci-build.sh (mismo patrón que la
+# receta arkdep). El .template SÍ se commitea, el rendered NO.
+iso/pacman.conf
+
 # Backup huérfano del script de build si falla a medias.
 iso/pacman.conf.bak
 

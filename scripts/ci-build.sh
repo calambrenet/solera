@@ -25,7 +25,8 @@
 # Variables de release (heredadas por image/build.sh y name.sh):
 #   SOLERA_RELEASE  (default 26.04)
 #   SOLERA_BUILD    (default timestamp con guiones — el id NO puede tener puntos)
-#   SOLERA_ALA_DATE (opcional; si no, build.sh busca el último snapshot ALA)
+#   SOLERA_ALA_DATE (opcional; si no, se busca el último snapshot ALA y se
+#                    exporta para que imagen e ISO usen la misma fecha)
 
 set -euo pipefail
 
@@ -45,7 +46,6 @@ DO_ISO="${DO_ISO:-yes}"
 : "${SOLERA_RELEASE:=26.04}"
 : "${SOLERA_BUILD:=$(date +%Y%m%d-%H%M%S)}"
 export SOLERA_RELEASE SOLERA_BUILD
-[[ -n "${SOLERA_ALA_DATE:-}" ]] && export SOLERA_ALA_DATE
 
 PACKAGES=(
     solera-keyring
@@ -64,6 +64,12 @@ PACKAGES=(
 
 log() { printf '\e[1;34m==>\e[0m %s\n' "$*"; }
 die() { printf '\e[1;31m==>\e[0m %s\n' "$*" >&2; exit 1; }
+
+# Resuelve SOLERA_ALA_DATE una sola vez y la exporta. Así image/build.sh y
+# la generación de iso/pacman.conf consumen exactamente la misma fecha del
+# Arch Linux Archive → el kernel del live y el de la imagen coinciden.
+source "$(dirname "${BASH_SOURCE[0]}")/ala-date.sh"
+resolve_ala_date || die 'No se pudo resolver SOLERA_ALA_DATE'
 
 [[ $EUID -ne 0 ]]        || die 'No correr como root: makepkg lo rehúsa. El contenedor corre como builder y usa sudo donde hace falta.'
 [[ -d "$SRC/packages" ]] || die "No existe $SRC/packages (¿montaste el repo en $SRC?)"
@@ -148,8 +154,13 @@ fi
 # [4/4] ISO instaladora (mkarchiso)
 # ---------------------------------------------------------------------------
 if [[ "$DO_ISO" == yes ]]; then
-    log "[4/4] ISO instaladora (mkarchiso)"
-    # iso/pacman.conf ya apunta a file://$LOCALREPO/$ARCH; no hay que reescribir.
+    log "[4/4] ISO instaladora (mkarchiso) — ALA $SOLERA_ALA_DATE"
+    # Genera iso/pacman.conf desde el .template, anclado al mismo snapshot
+    # ALA que la imagen del sistema. iso/pacman.conf es un artefacto de
+    # build (gitignored); la fuente de verdad es iso/pacman.conf.template.
+    sed "s#@ALA_DATE@#${SOLERA_ALA_DATE}#g" \
+        iso/pacman.conf.template > iso/pacman.conf
+    # iso/pacman.conf ya apunta a file://$LOCALREPO/$arch; no hay que reescribir.
     bundle_src=$(ls -t target/solera-*.tar.zst 2>/dev/null | head -1 || true)
     [[ -n "$bundle_src" ]] || die 'No hay imagen en target/ para bundlear (¿corriste con DO_IMAGE=yes?)'
     log "    Bundle: $(basename "$bundle_src") ($(du -h "$bundle_src" | cut -f1))"
@@ -161,6 +172,8 @@ if [[ "$DO_ISO" == yes ]]; then
     sudo rm -rf /var/tmp/archiso-work; mkdir -p out
     sudo mkarchiso -v -w /var/tmp/archiso-work -o out iso/ || die 'mkarchiso falló'
     cp -v out/solera-*.iso "$OUT/" || true
+    # Limpia el pacman.conf renderizado (no se commitea).
+    rm -f iso/pacman.conf
 fi
 
 log "OK. Artefactos en $OUT:"

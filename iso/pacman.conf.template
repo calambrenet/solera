@@ -1,0 +1,43 @@
+#
+# iso/pacman.conf.template — TEMPLATE
+#
+# El wrapper de build (scripts/build-iso-local.sh o scripts/ci-build.sh)
+# sustituye @ALA_DATE@ por SOLERA_ALA_DATE antes de invocar mkarchiso.
+# El archivo renderizado iso/pacman.conf es un artefacto de build (gitignored);
+# NO se commitea. La fuente de verdad es este .template.
+#
+# Al igual que la receta arkdep (image/arkdep-build.d/solera/), la ISO se
+# ancla al Arch Linux Archive en la misma fecha SOLERA_ALA_DATE. Así el kernel
+# (y todo el userspace) del live coinciden bit a bit con los de la imagen del
+# sistema que el instalador despliega. La ISO deja de ser "el kernel de hoy"
+# y pasa a ser "el kernel de la release".
+#
+# Token:
+#   @ALA_DATE@   fecha YYYY/MM/DD del snapshot del Arch Linux Archive
+
+[options]
+HoldPkg     = pacman glibc
+Architecture = auto
+Color
+ParallelDownloads = 5
+SigLevel    = Required DatabaseOptional
+LocalFileSigLevel = Optional
+
+# Solera FIJA la base de Arch a una fecha del Arch Linux Archive — mismo
+# snapshot que la receta arkdep. Sin mirrorlist del "hoy de Arch".
+
+[core]
+Server = https://archive.archlinux.org/repos/@ALA_DATE@/$repo/os/$arch
+
+[extra]
+Server = https://archive.archlinux.org/repos/@ALA_DATE@/$repo/os/$arch
+
+#[multilib]
+#Server = https://archive.archlinux.org/repos/@ALA_DATE@/$repo/os/$arch
+
+# Repositorio propio de Solera. En build local apunta al localrepo recién
+# generado por el propio script de build; es el path estándar que usan tanto
+# scripts/build-iso-local.sh como scripts/ci-build.sh.
+[solera]
+SigLevel = Optional TrustAll
+Server = file:///var/cache/pacman/pkg/solera-localrepo/$arch
