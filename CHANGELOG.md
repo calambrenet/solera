@@ -10,8 +10,8 @@ and this project adheres to `YY.MM` versioning pinned to an
 
 ## [26.08] — 2026-08-24
 
-Maintenance release. Tag: `v26.08`. ISO: `solera-<TODO>-x86_64.iso` (~<TODO> GB).
-Image: `solera-26-04-build-<TODO>.tar.zst` (~<TODO> GB).
+Maintenance release. Tag: `v26.08`. ISO: `solera-2026.08.24-x86_64.iso` (~4.2 GB).
+Image: `solera-26-04-build-20260824-093721.tar.zst` (~2.0 GB).
 
 ### Changed
 
@@ -25,6 +25,9 @@ Image: `solera-26-04-build-<TODO>.tar.zst` (~<TODO> GB).
   PyGObject (`solera-config` 26.04-37).
 - Documented the release verification model: rewritten README/README.es,
   new `REPRODUCING.md`, published signing pubkey (`keys/solera-release.pub`).
+- ALA snapshot bumped to `2026/08/23`, pulling `linux` 7.0.13.arch1 →
+  7.1.9.arch1, `systemd` 261 → 261.2, GNOME 50.2 → 50.4, `mesa` → 26.2.1,
+  `networkmanager` → 1.58.1.
 
 ### Fixed
 
@@ -35,12 +38,12 @@ Image: `solera-26-04-build-<TODO>.tar.zst` (~<TODO> GB).
 
 | Component | Version |
 |---|---|
-| Linux kernel | TODO — fill in after the build |
-| GNOME (Shell / Mutter) | TODO |
-| Mesa | TODO |
-| systemd | TODO |
-| glibc | TODO |
-| NetworkManager | TODO |
+| Linux kernel | 7.1.9.arch1 |
+| GNOME (Shell / Mutter) | 50.4 |
+| Mesa | 26.2.1 |
+| systemd | 261.2 |
+| glibc | 2.44 |
+| NetworkManager | 1.58.1 |
 
 ## [26.06.3] — 2026-06-26
 
