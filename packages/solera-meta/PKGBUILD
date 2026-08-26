@@ -8,7 +8,7 @@
 
 pkgname=solera-meta
 pkgver=26.04
-pkgrel=18
+pkgrel=19
 pkgdesc='Solera Linux meta-package: declares every package that composes Solera'
 arch=('any')
 url='https://github.com/calambrenet/solera'
@@ -134,7 +134,11 @@ depends=(
     'gnome-maps'
     'gnome-music'
     'gnome-remote-desktop'
-    'gnome-user-share'
+    # 'gnome-user-share' quitado: depende DURO (no opcional) de 'apache',
+    # que instala /usr/bin/suexec con SUID. "Personal File Sharing" por
+    # WebDAV es una función GNOME poco usada hoy (ver
+    # docs/security-hardening.md). Si hace falta compartir carpetas en LAN,
+    # vía `arkdep layer` o Flatpak.
     'gnome-weather'
     # 'gnome-tour'  # quitado: el tour "Welcome to GNOME" interrumpe el
                     # primer login y no añade valor a usuarios familiarizados

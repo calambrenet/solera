@@ -52,4 +52,36 @@ if ! grep -q '^ID=solera' "$workdir/etc/os-release"; then
     printf 'post_install.sh: AVISO — /etc/os-release no parece de Solera\n'
 fi
 
+# 6) Sanity: la clave de firma de Solera debe estar poblada en el keyring de
+#    pacman de la imagen (solera-keyring va en bootstrap.list, esto es
+#    cinturón y tirantes). Se extrae el fingerprint del propio keyring que
+#    instala el paquete, no de nada externo al repo. Aviso, no aborta.
+solera_keyring_file="$workdir/usr/share/pacman/keyrings/solera.gpg"
+if [[ -s "$solera_keyring_file" ]]; then
+    solera_fpr=$(arch-chroot "$workdir" gpg --no-default-keyring \
+        --keyring /usr/share/pacman/keyrings/solera.gpg \
+        --with-colons --list-keys 2>/dev/null | awk -F: '/^fpr:/ {print $10; exit}')
+    if [[ -n "$solera_fpr" ]] && ! arch-chroot "$workdir" pacman-key --list-keys "$solera_fpr" &>/dev/null; then
+        printf 'post_install.sh: AVISO — la clave de firma de Solera (%s) no está en el keyring de pacman de la imagen\n' "$solera_fpr"
+    fi
+else
+    printf 'post_install.sh: AVISO — %s no existe (¿solera-keyring instalado en bootstrap?)\n' "$solera_keyring_file"
+fi
+
+# 7) Hardening: /usr/bin/ksu (krb5) llega como dependencia transitiva
+#    ineliminable (curl, openssh, gnome-online-accounts...), pero su SUID
+#    no tiene caso de uso en un escritorio sin infraestructura Kerberos.
+if [[ -f "$workdir/usr/bin/ksu" ]]; then
+    chmod u-s "$workdir/usr/bin/ksu"
+fi
+
+# 8) Guardarraíl: el grupo 'docker' no debe existir en la imagen. Solera
+#    ofrece /usr/bin/docker vía podman-docker (shim CLI a podman), no el
+#    demonio real; si algún día algo lo introduce (paquete docker real,
+#    script de instalación), esto debe frenar el build, no avisar.
+if arch-chroot "$workdir" getent group docker >/dev/null 2>&1; then
+    printf 'post_install.sh: ERROR — grupo docker presente en la imagen (se esperaba solo podman rootless)\n' >&2
+    exit 1
+fi
+
 exit 0

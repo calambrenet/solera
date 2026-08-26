@@ -18,7 +18,7 @@
 
 pkgname=solera-config
 pkgver=26.04
-pkgrel=37
+pkgrel=38
 pkgdesc='Solera Linux defaults, branding and configuration overrides'
 arch=('any')
 url='https://github.com/calambrenet/solera'
@@ -123,6 +123,15 @@ package() {
     install -d "$pkgdir/etc/sysctl.d"
     install -m644 src/etc/sysctl.d-99-solera.conf \
         "$pkgdir/etc/sysctl.d/99-solera.conf"
+    install -m644 src/etc/sysctl.d-50-solera-hardening.conf \
+        "$pkgdir/etc/sysctl.d/50-solera-hardening.conf"
+
+    # systemd-resolved: LLMNR desactivado (vector de envenenamiento de
+    # nombres en LAN sin caso de uso real); mDNS se deja activo a propósito
+    # (ver el propio archivo y docs/security-hardening.md).
+    install -d "$pkgdir/etc/systemd/resolved.conf.d"
+    install -m644 src/etc/resolved.conf.d-10-solera-hardening.conf \
+        "$pkgdir/etc/systemd/resolved.conf.d/10-solera-hardening.conf"
 
     # sudoers.d/wheel: el primer usuario (creado por gnome-initial-setup
     # con -G wheel) tiene poderes sudo. /etc/sudoers de Arch ship la

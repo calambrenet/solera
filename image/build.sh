@@ -75,17 +75,31 @@ template="$variantdir/pacman.conf.template"
 real="$variantdir/pacman.conf"
 
 # SigLevel del repo [solera]: confianza ciega en builds locales (file://),
-# firma obligatoria en builds publicados (https://).
+# firma obligatoria en builds publicados (https://). "DatabaseOptional"
+# iguala el SigLevel del repo [solera] al de [core]/[extra]/[multilib]
+# (línea global de [options]): exige firma de paquete, no exige firma de
+# la base de datos del repo (no generamos repo-add -s todavía).
 if [[ "$SOLERA_REPO_URL" == file://* ]]; then
     SOLERA_SIGLEVEL='Optional TrustAll'
 else
-    SOLERA_SIGLEVEL='Required'
+    SOLERA_SIGLEVEL='Required DatabaseOptional'
 fi
 
 sed -e "s#@ALA_DATE@#${SOLERA_ALA_DATE}#g" \
     -e "s#@SOLERA_REPO@#${SOLERA_REPO_URL}#g" \
     -e "s#@SOLERA_SIGLEVEL@#${SOLERA_SIGLEVEL}#g" \
     "$template" > "$real"
+
+# Guardarraíl: un build de producción (repo no-file://) nunca debe llevar
+# TrustAll en pacman.conf. Si aparece (inyectado a mano, plantilla rota,
+# variable mal exportada), abortamos en vez de construir una imagen que
+# aceptaría paquetes sin firmar. Se mira solo líneas SigLevel reales, no
+# comentarios: la propia plantilla explica el token @SOLERA_SIGLEVEL@
+# mencionando "TrustAll" en prosa, y eso no cuenta como directiva.
+if [[ "$SOLERA_REPO_URL" != file://* ]] && grep -Eq '^[[:space:]]*SigLevel[[:space:]]*=.*TrustAll' "$real"; then
+    printf 'ERROR: build de producción con TrustAll en pacman.conf (%s) — abortando.\n' "$real" >&2
+    exit 1
+fi
 
 # ---- Invoca arkdep-build ----------------------------------------------------
 export SOLERA_RELEASE SOLERA_BUILD
