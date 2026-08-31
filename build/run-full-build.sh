@@ -59,7 +59,7 @@ sudo podman run --rm --privileged \
     -e DO_PACKAGES="${DO_PACKAGES:-yes}" \
     -e DO_IMAGE="${DO_IMAGE:-yes}" \
     -e DO_ISO="${DO_ISO:-yes}" \
-    -e SOLERA_RELEASE="${SOLERA_RELEASE:-26.04}" \
+    -e SOLERA_RELEASE="${SOLERA_RELEASE:-}" \
     -e SOLERA_BUILD="${SOLERA_BUILD:-}" \
     -e SOLERA_ALA_DATE="${SOLERA_ALA_DATE:-}" \
     "$IMAGE" \

@@ -50,8 +50,8 @@ La línea `id:compress:sha256sum` que `arkdep-build` imprime al final es la **da
 
 | Variable | Default | Descripción |
 |---|---|---|
-| `SOLERA_ALA_DATE` | último día del mes anterior | Fecha `YYYY/MM/DD` del Arch Linux Archive. La imagen se construye solo contra ese snapshot. |
-| `SOLERA_RELEASE` | `26.04` | Release semestral (`YY.MM`). |
+| `SOLERA_ALA_DATE` | snapshot más reciente disponible | Fecha `YYYY/MM/DD` del Arch Linux Archive. La imagen se construye solo contra ese snapshot. |
+| `SOLERA_RELEASE` | derivada de `SOLERA_ALA_DATE` (`YY.MM`) | Release. Si no se pasa, cada build toma la etiqueta del mes en que se construyó de verdad — no hay que acordarse de bumpearla a mano. Pásala explícita para congelar una etiqueta concreta. |
 | `SOLERA_BUILD` | timestamp | Identificador interno de build (separado de `RELEASE`). |
 | `SOLERA_REPO_URL` | (obligatorio) | URL base del repo pacman propio de Solera. Ej.: `file:///srv/solera-localrepo` o `https://repo.soleralinux.org/stable/repo`. |
 | `SOLERA_OUT` | `./target` | Dónde escribir los artefactos. |

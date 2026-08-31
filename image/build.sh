@@ -11,9 +11,10 @@
 #       sudo -E ./image/build.sh
 #
 # Variables:
-#   SOLERA_ALA_DATE   Fecha YYYY/MM/DD del Arch Linux Archive (default último
-#                     día del mes anterior, p. ej. 2026/04/30 si hoy es mayo).
-#   SOLERA_RELEASE    Release semestral en formato YY.MM (default 26.04).
+#   SOLERA_ALA_DATE   Fecha YYYY/MM/DD del Arch Linux Archive (default: el
+#                     snapshot más reciente disponible en el archive).
+#   SOLERA_RELEASE    Release en formato YY.MM (default: derivada de
+#                     SOLERA_ALA_DATE, p.ej. 2026/08/30 -> 26.08).
 #   SOLERA_BUILD      Identificador interno de build (default timestamp).
 #   SOLERA_REPO_URL   URL base del repo pacman de Solera. Para build local
 #                     debe vivir bajo /var/cache/pacman/pkg/ — es el único
@@ -29,24 +30,6 @@
 set -euo pipefail
 
 # ---- Defaults ---------------------------------------------------------------
-# Encuentra la fecha YYYY/MM/DD más reciente con snapshot en el Arch Linux
-# Archive. El archive no tiene snapshot todos los días, así que probamos
-# hacia atrás desde "ayer" hasta encontrar una válida.
-find_latest_ala_date() {
-    local day url code
-    for offset in $(seq 1 60); do
-        day=$(date -d "today - ${offset} day" '+%Y/%m/%d' 2>/dev/null) || continue
-        url="https://archive.archlinux.org/repos/${day}/core/os/x86_64/core.db"
-        code=$(curl -s -o /dev/null -w '%{http_code}' --head "$url" 2>/dev/null)
-        if [[ "$code" == "200" ]]; then
-            printf '%s\n' "$day"
-            return 0
-        fi
-    done
-    return 1
-}
-
-: "${SOLERA_RELEASE:=26.04}"
 : "${SOLERA_BUILD:=$(date +%Y%m%d-%H%M%S)}"
 : "${SOLERA_REPO_URL:?ERROR: SOLERA_REPO_URL no definido (URL del repo pacman de Solera)}"
 # SOLERA_OUT relativo al root del repo (no al cwd). Antes default era
@@ -54,19 +37,12 @@ find_latest_ala_date() {
 # el script — sorpresa cuando se ejecutaba desde packages/<algo>/.
 : "${SOLERA_OUT:=$(cd "$(dirname "$0")/.." && pwd)/target}"
 
-if [[ -z "${SOLERA_ALA_DATE:-}" ]]; then
-    printf 'build.sh: buscando snapshot del Arch Linux Archive...\n' >&2
-    if ! SOLERA_ALA_DATE=$(find_latest_ala_date); then
-        printf 'ERROR: no encontré snapshot del archive en los últimos 60 días.\n' >&2
-        exit 1
-    fi
-else
-    ala_url="https://archive.archlinux.org/repos/${SOLERA_ALA_DATE}/core/os/x86_64/core.db"
-    if ! curl -sfL -o /dev/null --head "$ala_url"; then
-        printf 'ERROR: SOLERA_ALA_DATE=%s no existe en el archive.\n' "$SOLERA_ALA_DATE" >&2
-        exit 1
-    fi
-fi
+# Resuelve SOLERA_ALA_DATE (snapshot ALA) y SOLERA_RELEASE (YY.MM, derivada
+# de esa fecha si no se pasó explícita). Compartido con scripts/ci-build.sh
+# para que ambos caminos de build calculen la release igual.
+source "$(cd "$(dirname "$0")/.." && pwd)/scripts/ala-date.sh"
+resolve_ala_date || exit 1
+resolve_release || exit 1
 
 # ---- Genera pacman.conf con los valores reales ------------------------------
 scriptdir="$(cd "$(dirname "$0")" && pwd)"

@@ -23,7 +23,7 @@
 #   DO_ISO=yes|no        construir la ISO instaladora
 #
 # Variables de release (heredadas por image/build.sh y name.sh):
-#   SOLERA_RELEASE  (default 26.04)
+#   SOLERA_RELEASE  (default: derivado de SOLERA_ALA_DATE, YY.MM)
 #   SOLERA_BUILD    (default timestamp con guiones — el id NO puede tener puntos)
 #   SOLERA_ALA_DATE (opcional; si no, se busca el último snapshot ALA y se
 #                    exporta para que imagen e ISO usen la misma fecha)
@@ -43,9 +43,8 @@ DO_PACKAGES="${DO_PACKAGES:-yes}"
 DO_IMAGE="${DO_IMAGE:-yes}"
 DO_ISO="${DO_ISO:-yes}"
 
-: "${SOLERA_RELEASE:=26.04}"
 : "${SOLERA_BUILD:=$(date +%Y%m%d-%H%M%S)}"
-export SOLERA_RELEASE SOLERA_BUILD
+export SOLERA_BUILD
 
 PACKAGES=(
     solera-keyring
@@ -70,6 +69,7 @@ die() { printf '\e[1;31m==>\e[0m %s\n' "$*" >&2; exit 1; }
 # Arch Linux Archive → el kernel del live y el de la imagen coinciden.
 source "$(dirname "${BASH_SOURCE[0]}")/ala-date.sh"
 resolve_ala_date || die 'No se pudo resolver SOLERA_ALA_DATE'
+resolve_release || die 'No se pudo resolver SOLERA_RELEASE'
 
 [[ $EUID -ne 0 ]]        || die 'No correr como root: makepkg lo rehúsa. El contenedor corre como builder y usa sudo donde hace falta.'
 [[ -d "$SRC/packages" ]] || die "No existe $SRC/packages (¿montaste el repo en $SRC?)"
