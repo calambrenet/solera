@@ -6,7 +6,46 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to `YY.MM` versioning pinned to an
 [Arch Linux Archive](https://archive.archlinux.org/) snapshot.
 
-## [Unreleased]
+## [26.09] — 2026-08-31
+
+Security release. Tag: `v26.09`. ISO: `solera-2026.08.31-x86_64.iso` (~4.2 GB).
+Image: `solera-26-04-build-20260831-085920.tar.zst` (~2.0 GB).
+
+### Changed
+
+- `[solera]` repo now requires `Required DatabaseOptional` in production
+  `pacman.conf` instead of a bare `Required`; `image/build.sh` aborts the
+  build if a production `pacman.conf` ever contains a real `TrustAll`
+  directive.
+- `solera-meta` drops `gnome-user-share`, whose hard dependency on `apache`
+  was the only reason the `suexec` SUID binary entered the image
+  (`solera-meta` 26.04-19).
+- `solera-config` sets `LLMNR=no` in `systemd-resolved` (mDNS stays on by
+  default — printer/Chromecast/AirPlay discovery) and ships a dedicated
+  sysctl hardening drop-in: `kernel.kptr_restrict=2`,
+  `kernel.dmesg_restrict=1`, `kernel.kexec_load_disabled=1`,
+  `kernel.perf_event_paranoid=2`, `rp_filter=1`, ICMP redirects rejected
+  (`solera-config` 26.04-38).
+- `image/.../post_install.sh` now warns if the Solera signing key isn't
+  populated in the image keyring, strips the SUID bit from `krb5`'s `ksu`
+  (no Kerberos infra on a desktop install), and aborts the build if a
+  `docker` group ever appears — Solera ships `podman-docker`'s CLI shim,
+  never real Docker.
+- Documented every hardening decision, including the still-open
+  `x-scheme-handler` audit that needs a live build to finish, in
+  `docs/security-hardening.md`.
+- ALA snapshot bumped, pulling `linux` 7.1.9.arch1 → 7.1.11.arch1.
+
+### Package highlights
+
+| Component | Version |
+|---|---|
+| Linux kernel | 7.1.11.arch1 |
+| GNOME (Shell / Mutter) | 50.4 |
+| Mesa | 26.2.1 |
+| systemd | 261.2 |
+| glibc | 2.44 |
+| NetworkManager | 1.58.1 |
 
 ## [26.08] — 2026-08-24
 
@@ -231,7 +270,8 @@ Initial public alpha. Tag: `v0.1.0-alpha`. First commit with project skeleton.
 - `solera-diseno-tecnico.md`: authoritative technical design document.
 - `docs-privados/inventario-maquina.md`: package inventory from the developer's machine.
 
-[Unreleased]: https://github.com/calambrenet/solera/compare/v26.06.1...HEAD
+[Unreleased]: https://github.com/calambrenet/solera/compare/v26.09...HEAD
+[26.09]: https://github.com/calambrenet/solera/compare/v26.08...v26.09
 [26.06.1]: https://github.com/calambrenet/solera/compare/v26.06...v26.06.1
 [26.06]: https://github.com/calambrenet/solera/compare/v0.1.0-alpha...v26.06
 [26.04]: https://github.com/calambrenet/solera/releases/tag/v0.1.0-alpha
