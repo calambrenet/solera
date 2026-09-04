@@ -84,4 +84,21 @@ if arch-chroot "$workdir" getent group docker >/dev/null 2>&1; then
     exit 1
 fi
 
+# 9) Sembrar el repo [solera] vacío en var.img. pacman.conf (ver
+#    pacman.conf.template) declara [solera] apuntando a
+#    /var/cache/pacman/pkg/solera-localrepo/$arch. Durante el build ese path
+#    se bind-monta desde el host (arkdep-build) para poder instalar
+#    solera-meta, pero se desmonta antes de este hook — así que tal cual,
+#    var.img quedaría sin el directorio. En un sistema ya desplegado eso
+#    rompe CUALQUIER `pacman -Syy` (incluido `arkdep layer`, que es como
+#    Solera resuelve p.ej. el driver NVIDIA) con "no se pudo abrir
+#    solera.db", porque el fichero no existe en absoluto. Sembramos aquí una
+#    base de datos de repo vacía pero válida para que el sync no aborte; en
+#    builds con SOLERA_REPO_URL real (https://) el primer `pacman -Sy` la
+#    sustituye por la base de datos real sin intervención.
+solera_localrepo="$workdir/var/cache/pacman/pkg/solera-localrepo/x86_64"
+mkdir -p "$solera_localrepo"
+tar -czf "$solera_localrepo/solera.db.tar.gz" --files-from /dev/null
+ln -sf solera.db.tar.gz "$solera_localrepo/solera.db"
+
 exit 0

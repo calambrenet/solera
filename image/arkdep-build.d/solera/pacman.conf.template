@@ -39,7 +39,11 @@ Server = https://archive.archlinux.org/repos/@ALA_DATE@/$repo/os/$arch
 # Repositorio propio de Solera. Aquí viven solera-meta, solera-config,
 # solera-keyring, arkdep (reempaquetado), libnss-extrausers y
 # gnome-shell-extension-dash-to-dock. En producción será S3/R2 + CDN; en
-# build local es file:///tmp/solera-localrepo.
+# build local es file:///var/cache/pacman/pkg/solera-localrepo. Ese path solo
+# existe de verdad durante el build (bind-mount desde el host); en el
+# sistema ya desplegado, extensions/post_install.sh siembra ahí una base de
+# datos de repo vacía pero válida para que `pacman -Syy`/`arkdep layer` no
+# aborten por no encontrar solera.db.
 [solera]
 SigLevel = @SOLERA_SIGLEVEL@
 Server = @SOLERA_REPO@/$arch
