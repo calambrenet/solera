@@ -6,6 +6,54 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to `YY.MM` versioning pinned to an
 [Arch Linux Archive](https://archive.archlinux.org/) snapshot.
 
+## [Unreleased]
+
+### Added
+
+- **Automatic rollback for failed boots** via new package `solera-bootcheck`
+  (26.09-1), now declared by `solera-meta` (26.04-20): two systemd units
+  (`solera-bootcheck-graphical`, `solera-bootcheck-network`) plus the native
+  `systemd-boot-check-no-failures.service`, all `RequiredBy=boot-complete.target`.
+  A deployment must show a stable graphical session (GDM active and not
+  crash-looping, no real login required), a responsive NetworkManager daemon
+  (direct probe, no dependency on the masked `NetworkManager-wait-online`)
+  and zero failed units before its entry is blessed; otherwise arkdep's
+  native `+3` boot counter is consumed and after three consecutive failures
+  systemd-boot silently falls back to the last known-good entry. A
+  deterministic failure can be forced for validation via
+  `solera.bootcheck=fail` on the kernel cmdline. Validated end-to-end in a
+  VM: forced-fail cycle `+3`→`+0-3`→auto-revert, plus network and
+  failed-unit injection, and recovery back to "good" on a clean boot.
+
+### Changed
+
+- `SOLERA_RELEASE` is now derived from the Arch Linux Archive snapshot
+  (`SOLERA_ALA_DATE`) instead of a frozen `26.04`.
+- `var.img` seeds an empty but valid `[solera]` repo database so the first
+  `pacman -Syy` on a fresh deployment (including `arkdep layer`) doesn't
+  fail on a missing `solera.db`.
+- `gnome-shell-extension-solera-update` bumped to 0.1.2.
+
+### Fixed
+
+- `solera-config` (26.04-39), three latent bugs found while validating
+  `solera-bootcheck`, each of which blocked boot blessing on every
+  installed system:
+  - Mask `systemd-networkd-wait-online.service`. systemd ≥256 applies the
+    distro presets on first boot ("Applying preset policy"), and Arch's
+    `90-systemd.preset` enables that unit alongside NetworkManager — it
+    times out on every boot, leaving a `failed` unit that made
+    `systemd-boot-check-no-failures` fail forever.
+  - `user@.service` drop-in: add `TimeoutStopFailureStatus=success` so the
+    15s stop cap killing a session that doesn't die cleanly (e.g. the
+    `gnome-initial-setup` session on first boot) no longer leaves
+    `user@<uid>` in `failed` state and penalizes the boot counter.
+  - `solera-etc-bootstrap.service`: drop `After=local-fs.target`. It closed
+    an ordering cycle with the fstab-generated `boot.automount`; systemd
+    broke the cycle by non-deterministically deleting a job — when it was
+    the automount, `/boot` (ESP) stayed unmounted all session and
+    `systemd-bless-boot` failed with "Couldn't find $BOOT partition".
+
 ## [26.09] — 2026-08-31
 
 Security release. Tag: `v26.09`. ISO: `solera-2026.08.31-x86_64.iso` (~4.2 GB).
