@@ -8,7 +8,7 @@
 
 pkgname=solera-meta
 pkgver=26.04
-pkgrel=19
+pkgrel=20
 pkgdesc='Solera Linux meta-package: declares every package that composes Solera'
 arch=('any')
 url='https://github.com/calambrenet/solera'
@@ -309,6 +309,10 @@ depends=(
 
     # ---- Configuración propia de Solera ------------------------------------
     'solera-config'
+    # Healthchecks de arranque que gatean boot-complete.target para que el
+    # boot counting de systemd-boot (que arkdep ya escribe con `+3`) pueda
+    # disparar el auto-revert a la entrada buena anterior.
+    'solera-bootcheck'
 
     # ---- Soporte para VMs (transparente; no estorba en bare metal) ---------
     'spice-vdagent'

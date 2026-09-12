@@ -1,0 +1,71 @@
+# Maintainer: José Luis Castro <info@soleralinux.org>
+#
+# solera-bootcheck: healthchecks de arranque que gatean boot-complete.target.
+#
+# arkdep escribe cada entrada de systemd-boot con boot counting (`+3`), pero
+# `boot-complete.target` solo depende de `sysinit.target`, así que se cumple
+# trivialmente y `systemd-bless-boot.service` bendice siempre la entrada: el
+# auto-revert nunca se dispara. Este paquete añade dos chequeos propios
+# (sesión gráfica y red) y habilita la unidad nativa
+# `systemd-boot-check-no-failures.service` (unidades systemd en estado
+# `failed`), todos con `RequiredBy=boot-complete.target`. Si alguno falla,
+# `boot-complete.target` no se activa, la entrada conserva su contador
+# decrementado y systemd-boot recurre solo a la anterior tras agotar los
+# intentos.
+#
+# Solo para sistemas instalados: el live ISO no usa boot counting de arkdep,
+# así que aquí no aplica (y no se instala en `iso/`).
+
+pkgname=solera-bootcheck
+pkgver=26.09
+pkgrel=1
+pkgdesc='Solera boot health checks gating boot-complete.target for systemd-boot auto-rollback'
+arch=('any')
+url='https://github.com/calambrenet/solera'
+license=('GPL-3.0-or-later')
+
+depends=(
+    'systemd'
+)
+
+source=(
+    # Todo va en src/ junto al PKGBUILD; al construir lo copiamos al pkgdir.
+)
+sha256sums=()
+
+package() {
+    cd "$startdir"
+
+    # ---- Healthcheck scripts -----------------------------------------------
+    install -d "$pkgdir/usr/libexec/solera"
+    install -m755 src/bin/solera-bootcheck-graphical \
+        "$pkgdir/usr/libexec/solera/solera-bootcheck-graphical"
+    install -m755 src/bin/solera-bootcheck-network \
+        "$pkgdir/usr/libexec/solera/solera-bootcheck-network"
+
+    # ---- systemd units -------------------------------------------------------
+    install -d "$pkgdir/usr/lib/systemd/system"
+    install -m644 src/systemd/solera-bootcheck-graphical.service \
+        "$pkgdir/usr/lib/systemd/system/solera-bootcheck-graphical.service"
+    install -m644 src/systemd/solera-bootcheck-network.service \
+        "$pkgdir/usr/lib/systemd/system/solera-bootcheck-network.service"
+
+    # ---- Enable via symlink --------------------------------------------------
+    # En imagen inmutable no se puede `systemctl enable` en build-time; el
+    # patrón es crear el symlink de `RequiredBy=` a mano (igual que
+    # solera-config con bluetooth/ufw). `RequiredBy` (no `Wants`): si un
+    # chequeo falla, el job de boot-complete.target falla con él y
+    # systemd-bless-boot nunca se ejecuta.
+    #
+    # El tercero habilita la unidad nativa de systemd (ya presente en el
+    # paquete `systemd`, static por defecto): falla si hay alguna unidad en
+    # estado `failed`.
+    declare -r requires="$pkgdir/etc/systemd/system/boot-complete.target.requires"
+    install -d "$requires"
+    ln -sf /usr/lib/systemd/system/solera-bootcheck-graphical.service \
+        "$requires/solera-bootcheck-graphical.service"
+    ln -sf /usr/lib/systemd/system/solera-bootcheck-network.service \
+        "$requires/solera-bootcheck-network.service"
+    ln -sf /usr/lib/systemd/system/systemd-boot-check-no-failures.service \
+        "$requires/systemd-boot-check-no-failures.service"
+}

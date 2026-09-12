@@ -32,6 +32,7 @@ PACKAGES=(
     gnome-shell-extension-compiz-alike-magic-lamp-effect
     gnome-shell-extension-solera-update
     zsh-theme-powerlevel10k
+    solera-bootcheck
     solera-config
     solera-meta
 )

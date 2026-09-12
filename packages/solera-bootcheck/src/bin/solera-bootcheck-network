@@ -1,0 +1,43 @@
+#!/bin/bash
+# Boot health check: NetworkManager must be up and its daemon responsive.
+#
+# Gates boot-complete.target (via RequiredBy=): see the graphical check for
+# the rollback mechanics.
+#
+# Deliberately probes NetworkManager.service directly instead of waiting on
+# network-online.target / NetworkManager-wait-online.service. The latter is
+# masked on purpose in solera-config (it needlessly slows boot); depending on
+# it here would either reintroduce that delay or be satisfied trivially
+# without checking anything real.
+
+set -o pipefail
+
+fail() {
+    printf 'solera-bootcheck-network: %s\n' "$*" >&2
+    exit 1
+}
+
+# Time budgets stay under the unit's TimeoutStartSec=20s.
+WAIT_TIMEOUT=12    # max seconds to wait for NetworkManager.service to start
+NMCLI_TIMEOUT=5    # max seconds for the daemon to answer a query
+
+deadline=$(( $(date +%s) + WAIT_TIMEOUT ))
+while :; do
+    if systemctl is-active --quiet NetworkManager.service; then
+        break
+    fi
+    if (( $(date +%s) >= deadline )); then
+        fail 'NetworkManager.service not active within check window'
+    fi
+    sleep 1
+done
+
+# The unit being "active" only means the daemon process launched; nmcli talks
+# to it over D-Bus, so a successful call proves the daemon is responsive.
+# Do not require full internet connectivity (that would reintroduce the
+# wait-for-online semantics we rejected).
+if ! timeout "$NMCLI_TIMEOUT" nmcli general status >/dev/null 2>&1; then
+    fail 'NetworkManager daemon did not respond to nmcli within timeout'
+fi
+
+printf 'solera-bootcheck-network: NetworkManager responsive\n'

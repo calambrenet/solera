@@ -1,0 +1,67 @@
+#!/bin/bash
+# Boot health check: the graphical session must be up and stable.
+#
+# Gates boot-complete.target (via RequiredBy=): if this exits non-zero the
+# target never activates, systemd-bless-boot never blesses the entry, and
+# systemd-boot's native boot counting (written by arkdep as `+3`) decrements
+# the tries counter. After enough failed boots the firmware falls back to the
+# last known-good entry automatically.
+#
+# Deliberately does NOT require a real user login: an unattended machine
+# parked at the GDM greeter is a healthy boot, and demanding a session would
+# cause false rollbacks (e.g. after a nightly update with nobody around).
+#
+# Stability is judged via gdm.service NRestarts: a crash-looping GDM fails
+# the check even if the unit happens to be "active" at the sampled instant.
+
+set -o pipefail
+
+fail() {
+    printf 'solera-bootcheck-graphical: %s\n' "$*" >&2
+    exit 1
+}
+
+# Deterministic failure injection for validating the auto-revert path in QEMU:
+# append `solera.bootcheck=fail` to the kernel cmdline in the systemd-boot
+# editor (`editor yes` is on in loader.conf). SOLERA_BOOTCHECK_CMDLINE lets
+# the check be unit-tested without rebooting.
+cmdline_source="${SOLERA_BOOTCHECK_CMDLINE:-/proc/cmdline}"
+if grep -qw 'solera.bootcheck=fail' "$cmdline_source" 2>/dev/null; then
+    fail 'forced failure requested via solera.bootcheck=fail'
+fi
+
+# Time budgets stay under the unit's TimeoutStartSec=45s so a hung check
+# produces a deterministic service failure instead of blocking
+# boot-complete.target forever.
+WAIT_TIMEOUT=35   # max seconds to wait for graphical.target + gdm.service
+STABLE_WINDOW=8   # observation window for crash-loop detection
+MAX_RESTARTS=2    # gdm.service restarts tolerated since boot
+
+is_active() { systemctl is-active --quiet "$1"; }
+
+deadline=$(( $(date +%s) + WAIT_TIMEOUT ))
+while :; do
+    if is_active graphical.target && is_active gdm.service; then
+        break
+    fi
+    if (( $(date +%s) >= deadline )); then
+        fail 'graphical.target/gdm.service not active within check window'
+    fi
+    sleep 1
+done
+
+restarts=$(systemctl show -p NRestarts --value gdm.service)
+sleep "$STABLE_WINDOW"
+
+is_active graphical.target || fail 'graphical.target deactivated during check'
+is_active gdm.service || fail 'gdm.service deactivated during check (crash)'
+
+now=$(systemctl show -p NRestarts --value gdm.service)
+if (( now != restarts )); then
+    fail "gdm.service restarted during the stability window ($restarts -> $now)"
+fi
+if (( now > MAX_RESTARTS )); then
+    fail "gdm.service crash-looping (NRestarts=$now > $MAX_RESTARTS)"
+fi
+
+printf 'solera-bootcheck-graphical: graphical session healthy\n'

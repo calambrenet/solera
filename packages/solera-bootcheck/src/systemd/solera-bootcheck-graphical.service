@@ -1,0 +1,22 @@
+[Unit]
+Description=Solera boot health check: graphical session
+Documentation=https://github.com/calambrenet/solera
+# Start once the text-mode boot is done; the script itself polls for
+# graphical.target/gdm.service within its own budget so the 45s window is
+# measured from a well-defined point instead of racing unit ordering.
+After=multi-user.target
+Before=boot-complete.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/solera/solera-bootcheck-graphical
+# Bounded window: a hung check must fail deterministically (decrementing the
+# systemd-boot tries counter) instead of blocking boot-complete.target.
+TimeoutStartSec=45s
+
+[Install]
+# Enabled by symlink in boot-complete.target.requires/ (see PKGBUILD): hard
+# dependency, so a failed check fails the boot-complete.target job and
+# systemd-bless-boot never runs.
+RequiredBy=boot-complete.target
