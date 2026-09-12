@@ -18,7 +18,7 @@
 
 pkgname=solera-config
 pkgver=26.04
-pkgrel=38
+pkgrel=39
 pkgdesc='Solera Linux defaults, branding and configuration overrides'
 arch=('any')
 url='https://github.com/calambrenet/solera'
@@ -197,6 +197,17 @@ package() {
     # Deshabilitación explícita de NetworkManager-wait-online por mask
     ln -sf /dev/null \
         "$pkgdir/etc/systemd/system/NetworkManager-wait-online.service"
+
+    # systemd-networkd-wait-online: systemd (>=256) aplica los presets de la
+    # distro en el PRIMER ARRANQUE ("Applying preset policy" de PID1 al
+    # confirmar el machine-id). El 90-systemd.preset de Arch habilita esta
+    # unidad junto a NetworkManager: su timeout expira en cada arranque (NM
+    # es dueño de la red) y la unidad queda 'failed', lo que hace fallar a
+    # systemd-boot-check-no-failures (solera-bootcheck) y bloquea el blessing
+    # de la entrada de systemd-boot para siempre. Mask, no preset-disable:
+    # preset-all no puede habilitar una unidad enmascarada.
+    ln -sf /dev/null \
+        "$pkgdir/etc/systemd/system/systemd-networkd-wait-online.service"
 
     # malcontent-timer: el .service ignora SIGTERM al apagar (bug upstream
     # conocido en libmalcontent). Bloquea el shutdown ~15s. Solera no usa

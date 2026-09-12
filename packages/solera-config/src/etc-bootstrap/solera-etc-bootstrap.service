@@ -3,7 +3,13 @@ Description=Solera /etc/{passwd,group,shadow} bootstrap (merge from /usr/lib)
 Documentation=https://github.com/calambrenet/solera
 ConditionPathExists=/usr/lib/group
 DefaultDependencies=no
-After=local-fs.target
+# NO After=local-fs.target: cerraba un ciclo de orden (local-fs-pre ->
+# systemd-tmpfiles-setup-dev -> systemd-sysusers -> esta unidad -> local-fs
+# -> boot.automount -> local-fs-pre) que hacìa que systemd rompiera el ciclo
+# borrando a veces el job de boot.automount (ESP nunca montado ->
+# systemd-bless-boot no puede renombrar la entrada) y a veces el de
+# local-fs-pre.target. La fusion solo toca /etc/* y /usr/lib/* en el subvol
+# root, ya montado rw por el initrd antes de PID1.
 Before=sysinit.target systemd-sysusers.service nss-user-lookup.target shadow.service accounts-daemon.service gdm.service display-manager.service
 
 [Service]
