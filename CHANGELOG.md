@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to `YY.MM` versioning pinned to an
 [Arch Linux Archive](https://archive.archlinux.org/) snapshot.
 
-## [Unreleased]
+## [26.09.2] - 2026-09-12
 
 ### Added
 
@@ -53,6 +53,18 @@ and this project adheres to `YY.MM` versioning pinned to an
     broke the cycle by non-deterministically deleting a job — when it was
     the automount, `/boot` (ESP) stayed unmounted all session and
     `systemd-bless-boot` failed with "Couldn't find $BOOT partition".
+
+### Package highlights
+
+| Component | Version |
+|---|---|
+| Linux kernel | 7.2.4.arch1 |
+| GNOME (Shell / Mutter) | 50.4 |
+| Mesa | 26.2.2 |
+| systemd | 261.3 |
+| glibc | 2.44 |
+| NetworkManager | 1.58.1 |
+
 
 ## [26.09] — 2026-08-31
 
