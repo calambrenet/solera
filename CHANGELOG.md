@@ -95,6 +95,20 @@ and this project adheres to `YY.MM` versioning pinned to an
 
 ### Package highlights
 
+Tag: `v26.09.3`. ISO: `solera-2026.09.19-x86_64.iso` (~4.2GB).
+Image: `solera-26-09-build-20260919-141157.tar.zst` (~2.1GB).
+
+| Component | Version |
+|---|---|
+| Linux kernel | 7.2.6.arch2 |
+| GNOME (Shell / Mutter) | 50.5 |
+| Mesa | 26.2.3 |
+| systemd | 261.3 |
+| glibc | 2.44 |
+| NetworkManager | 1.58.1 |
+
+### Package highlights
+
 | Component | Version |
 |---|---|
 | Linux kernel | 7.2.4.arch1 |
