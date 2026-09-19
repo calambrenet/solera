@@ -12,7 +12,7 @@
 
 pkgname=arkdep
 pkgver=2025.12.18
-pkgrel=2
+pkgrel=3
 pkgdesc='Toolkit for building, deploying and maintaining a btrfs-based multi-root system (Solera build)'
 arch=('any')
 url='https://codeberg.org/arkanelinux/arkdep'
@@ -30,10 +30,24 @@ prepare() {
     # instalado consume el repo de Solera y rechaza imágenes sin firmar
     # sin más configuración. Se parchea aquí (no en runtime) para que el
     # binario empaquetado ya los lleve.
+    #
+    # dist_migrate_files: upstream migra 'etc/group' (y passwd/shadow) del
+    # sistema en marcha a cada deployment nuevo, pero no 'etc/gshadow'. Si el
+    # usuario se añade a un grupo después de instalar (p.ej. `arkdep layer
+    # libvirt`, o cualquier `usermod -aG`), /etc/group del nuevo deployment
+    # queda con esa membresía pero su /etc/gshadow (el de la imagen recién
+    # construida) no la tiene. grpck lo detecta en cada arranque, no puede
+    # corregirlo sin terminal interactiva y `shadow.service` falla siempre.
+    # Desde que existe solera-bootcheck, systemd-boot-check-no-failures exige
+    # cero unidades fallidas para bendecir el boot: ese fallo, por sí solo,
+    # basta para que el deployment nunca se bendiga y arkdep lo revierta tras
+    # 3 arranques buenos pero nunca "sanos" según ese chequeo. Añadir
+    # etc/gshadow a la lista lo mantiene sincronizado igual que etc/group.
     sed -i \
         -e "s|^declare -r dist_repo_url=.*|declare -r dist_repo_url='https://repo.soleralinux.org/stable/images'|" \
         -e "s|^declare -r dist_repo_default_image=.*|declare -r dist_repo_default_image='solera'|" \
         -e "s|^declare -r dist_gpg_signature_check=.*|declare -r dist_gpg_signature_check=2|" \
+        -e "s|'etc/group' 'etc/subuid'|'etc/group' 'etc/gshadow' 'etc/subuid'|" \
         arkdep
 
     # Verificar que el sed acertó (falla ruidosamente si upstream renombra).
@@ -41,6 +55,8 @@ prepare() {
         || { printf 'prepare: el parche de dist_repo_url no se aplicó\n' >&2; return 1; }
     grep -q "dist_gpg_signature_check=2" arkdep \
         || { printf 'prepare: el parche de dist_gpg_signature_check no se aplicó\n' >&2; return 1; }
+    grep -q "'etc/group' 'etc/gshadow' 'etc/subuid'" arkdep \
+        || { printf 'prepare: el parche de dist_migrate_files (etc/gshadow) no se aplicó\n' >&2; return 1; }
 }
 
 package() {

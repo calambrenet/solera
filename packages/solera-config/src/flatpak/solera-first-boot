@@ -15,16 +15,21 @@ if [[ -f "$FLAG_FILE" ]]; then
     exit 0
 fi
 
-# 1. Remote Flathub (idempotente)
-flatpak remote-add --if-not-exists --system flathub \
-    https://dl.flathub.org/repo/flathub.flatpakrepo
-
-# 2. Set inicial (si la red falla en este boot, lo dejamos para el siguiente
-#    intento: NO creamos el flag.)
+# Conectividad primero: sin esto, `flatpak remote-add` con DNS aún no
+# listo abortaba el script (set -e) y dejaba la unidad 'failed' — que
+# solera-bootcheck cuenta como arranque malo, consumiendo intentos del
+# boot counting en máquinas instaladas offline. Sin red simplemente no
+# hacemos nada y lo reintentamos en el próximo arranque.
 if ! ping -c1 -W3 dl.flathub.org > /dev/null 2>&1; then
     echo "solera-first-boot: sin conectividad a Flathub, se reintentará en el próximo boot"
     exit 0
 fi
+
+# 1. Remote Flathub (idempotente)
+flatpak remote-add --if-not-exists --system flathub \
+    https://dl.flathub.org/repo/flathub.flatpakrepo
+
+# 2. Set inicial
 
 while IFS= read -r app_id; do
     # Saltar líneas vacías y comentarios

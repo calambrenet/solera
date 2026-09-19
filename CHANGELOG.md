@@ -53,6 +53,45 @@ and this project adheres to `YY.MM` versioning pinned to an
     broke the cycle by non-deterministically deleting a job — when it was
     the automount, `/boot` (ESP) stayed unmounted all session and
     `systemd-bless-boot` failed with "Couldn't find $BOOT partition".
+- `solera-config` (26.04-40): `solera-first-boot` now checks Flathub
+  reachability **before** `flatpak remote-add` — with DNS not yet up the
+  remote-add aborted the script (`set -e`), leaving the unit `failed`,
+  which `solera-boot-check-no-failures` correctly counts as a bad boot,
+  burning boot-counter tries on offline installs. The unit also drops its
+  inert `After=/Wants=network-online.target` (both wait-online units are
+  masked on purpose; the script's ping guard is the real gate). Found on
+  first real deployment of `solera-bootcheck`.
+
+### Package highlights
+
+| Component | Version |
+|---|---|
+| Linux kernel | 7.2.4.arch1 |
+| GNOME (Shell / Mutter) | 50.4 |
+| Mesa | 26.2.2 |
+| systemd | 261.3 |
+| glibc | 2.44 |
+| NetworkManager | 1.58.1 |
+
+## [26.09.3] - 2026-09-19
+
+### Fixed
+
+- `arkdep` (2025.12.18-3): `migrate_files` now includes `etc/gshadow`
+  alongside `etc/group`/`etc/passwd`/`etc/shadow`. Without it, any group
+  membership added on the live system after install (e.g. `arkdep layer
+  libvirt`, or any `usermod -aG`) migrates into `/etc/group` on every new
+  deployment but not into `/etc/gshadow`, which stays whatever the image
+  had at build time. `grpck` (run at boot via `shadow.service`) flags the
+  mismatch and can't fix it non-interactively, so the service fails
+  deterministically on every boot — which `systemd-boot-check-no-failures`
+  treats as a bad boot regardless of how healthy the actual session is.
+  Combined with `solera-bootcheck`, any deployment created after a
+  post-install group change would never bless and would silently
+  auto-revert after exactly 3 boots. Found on a real stuck deployment
+  (`solera-26-09-build-20260912-143541`) that booted fine three times
+  (10–70 min sessions each) yet kept being reported as "needs reboot" by
+  the update indicator, right up to the point systemd-boot gave up on it.
 
 ### Package highlights
 

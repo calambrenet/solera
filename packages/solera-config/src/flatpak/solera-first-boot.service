@@ -1,7 +1,11 @@
 [Unit]
 Description=Solera first-boot Flatpak preinstall
-After=network-online.target
-Wants=network-online.target
+# Sin After=/Wants=network-online.target: en Solera ambas unidades
+# wait-online van enmascaradas a propósito, así que ese target se cumple
+# al instante y no ordena nada. La espera real de conectividad la hace el
+# propio script (ping de cortesía a dl.flathub.org; sin red sale 0 y lo
+# reintenta en el próximo boot), para no dejar la unidad 'failed' y
+# penalizar el boot counting gestionado por solera-bootcheck.
 ConditionPathExists=!/var/lib/solera/first-boot.done
 
 [Service]
