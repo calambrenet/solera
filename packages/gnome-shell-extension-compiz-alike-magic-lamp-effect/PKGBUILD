@@ -9,13 +9,14 @@
 # solera-config en el dconf override 02-shell.
 #
 # Origen: extensions.gnome.org. El repo upstream no usa tags formales
-# (HEAD declara version=25 a fecha de hoy, pero el último publicado en
-# EGO es v24); preferimos el zip oficial de EGO porque es lo que
-# realmente se distribuye y es deterministic.
+# (v25 es el último publicado en EGO, y el primero cuyo metadata.json declara
+# shell-version hasta 51 — con v24 GNOME Shell 51.1 no la cargaba);
+# preferimos el zip oficial de EGO porque es lo que realmente se distribuye
+# y es deterministic.
 
 pkgname=gnome-shell-extension-compiz-alike-magic-lamp-effect
-pkgver=24
-pkgrel=2
+pkgver=25
+pkgrel=1
 pkgdesc='Magic lamp effect for window minimize/restore (system-wide install for Solera)'
 arch=('any')
 url='https://github.com/hermes83/compiz-alike-magic-lamp-effect'

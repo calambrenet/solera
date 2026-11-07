@@ -8,9 +8,13 @@
 # Solera empaqueta la extensión a nivel de sistema (mismo patrón que
 # gnome-shell-extension-dash-to-dock), no por usuario, para que esté
 # presente desde el primer arranque sin necesidad de extensions.gnome.org.
+#
+# Bump a v77: es la primera cuyo metadata.json declara shell-version 51. Con
+# v72 (hasta 50) GNOME Shell 51.1 —el que trae ALA 2026/11/06— la rechazaba y
+# el blur desaparecía de la imagen.
 
 pkgname=gnome-shell-extension-blur-my-shell
-pkgver=72
+pkgver=77
 pkgrel=1
 pkgdesc='Blur effects for the GNOME Shell (system-wide install for Solera)'
 arch=('any')

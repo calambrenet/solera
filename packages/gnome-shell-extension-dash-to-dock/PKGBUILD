@@ -11,7 +11,7 @@
 # activación por defecto la hace solera-config vía dconf override.
 
 pkgname=gnome-shell-extension-dash-to-dock
-pkgver=105
+pkgver=110
 pkgrel=1
 pkgdesc='A dock for the GNOME Shell (system-wide install for Solera)'
 arch=('any')
@@ -19,9 +19,11 @@ url='https://github.com/micheleg/dash-to-dock'
 license=('GPL-2.0-or-later')
 depends=('gnome-shell')
 makedepends=('glib2' 'gettext' 'sassc')
-# Convención de tags upstream: extensions.gnome.org-v<N>. v105 declara
-# shell-version = [45, 46, 47, 48, 49, 50] en metadata.json — cubre todo
-# el rango GNOME que se va a encontrar en cualquier snapshot ALA reciente.
+# Convención de tags upstream: extensions.gnome.org-v<N>. v110 declara
+# shell-version = [45, 46, 47, 48, 49, 50, 51] en metadata.json. El 51 no es
+# decorativo: GNOME Shell no carga una extensión cuya metadata no liste la
+# versión del shell en ejecución, así que con v105 (hasta 50) la dock no
+# aparecía en la imagen anclada a ALA 2026/11/06 (gnome-shell 51.1).
 _tag="extensions.gnome.org-v$pkgver"
 source=("dash-to-dock-$_tag.tar.gz::$url/archive/refs/tags/$_tag.tar.gz")
 sha256sums=('SKIP')
