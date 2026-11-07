@@ -6,6 +6,66 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to `YY.MM` versioning pinned to an
 [Arch Linux Archive](https://archive.archlinux.org/) snapshot.
 
+## [26.11] - 2026-11-07
+
+Monthly refresh: the image and the installer ISO rebuilt against a newer Arch
+Linux Archive snapshot. `arkdep`, `solera-config`, `solera-meta`,
+`solera-bootcheck` and `os-installer-config-solera` are unchanged since
+`v26.09.3` — the only source changes are the four bundled GNOME Shell
+extensions, forced by the GNOME major bump in the snapshot.
+
+### Changed
+
+- ALA snapshot bumped `2026/09/19` → `2026/11/06`. Of the 941 packages in the
+  image, 922 come from the snapshot and **348 move forward** (the remaining 19
+  are ours or AUR mirrors: `arkdep`, `solera-*`, `libnss-extrausers`, the four
+  GNOME Shell extensions, `lib32-*`).
+- **GNOME Shell extensions bumped for GNOME 51**: `dash-to-dock` 105 → 110,
+  `blur-my-shell` 72 → 77, `compiz-alike-magic-lamp-effect` 24 → 25 and our own
+  `solera-update` 0.1.2 → 0.1.3, whose `metadata.json` now lists `51` in
+  `shell-version`. GNOME Shell refuses to load an extension whose metadata does
+  not name the running shell version, so with the snapshot jump and without
+  these bumps the image would have booted with no dock, no blur, no magic lamp
+  and no update indicator. The three upstream bumps are GNOME 51 ready by
+  upstream; `solera-update` is not, so `Main.panel.addToStatusArea()` and
+  `Main.messageTray` deserve a look in Looking Glass on the first 26.11 boot.
+- **GNOME 50.5 → 51.1**: `gnome-shell` 1:50.5 → 1:51.1, `mutter` 50.5 → 51.1,
+  `gdm` 50.3 → 51.1.1, `nautilus` / `gnome-control-center` → 51.1,
+  `libadwaita` 1.9.4 → 1.10.0, `gtk4` 4.22.5 → 4.24.1, `gjs` 1.88.1 → 1.90.1,
+  `dconf` 0.49.0 → 51.0.
+- **`systemd` 261.3 → 262.1** — first release built on the 262 series. Boot
+  blessing (`solera-bootcheck` + `systemd-boot-check-no-failures`) and the
+  preset policy applied on first boot are the two things to re-verify in the
+  VM before promoting, following the D7 lesson from `26.09.2`.
+- Kernel and firmware: `linux` 7.2.6.arch2 → 7.2.14.arch1, `linux-firmware`
+  and `amd-ucode` 20260916 → 20261019, `intel-ucode` 20260812 → 20260925.
+- Desktop stack and tooling: `mesa` 26.2.3 → 26.2.6, `pipewire` 1.6.8 →
+  1.6.10 with `wireplumber` 0.5.17 → 0.5.18, `podman` 6.1.2 → 6.1.4, `flatpak`
+  1.18.2 → 1.18.4, `openssh` 10.5p1 → 10.6p1, `git` 2.55.0 → 2.56.0,
+  `github-cli` 2.101.0 → 2.103.3, `rclone` 1.75.1 → 1.75.2, `curl` 8.22.0 →
+  8.23.0, `glibc` 2.44+r24 → 2.44+r50.
+
+### Package highlights
+
+| Component | Version |
+|---|---|
+| Linux kernel | 7.2.14.arch1 |
+| GNOME (Shell / Mutter) | 51.1 |
+| Mesa | 26.2.6 |
+| systemd | 262.1 |
+| glibc | 2.44 |
+| NetworkManager | 1.58.1 |
+| PipeWire / WirePlumber | 1.6.10 / 0.5.18 |
+| Podman | 6.1.4 |
+| Flatpak | 1.18.4 |
+| GTK | 4.24.1 |
+| rclone | 1.75.2 |
+| github-cli | 2.103.3 |
+| Dash to Dock | 110 |
+| Blur my Shell | 77 |
+| Compiz Magic Lamp | 25 |
+| Solera Update | 0.1.3 |
+
 ## [26.09.2] - 2026-09-12
 
 ### Added
