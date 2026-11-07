@@ -8,7 +8,7 @@
 
 pkgname=solera-meta
 pkgver=26.04
-pkgrel=20
+pkgrel=21
 pkgdesc='Solera Linux meta-package: declares every package that composes Solera'
 arch=('any')
 url='https://github.com/calambrenet/solera'
@@ -114,6 +114,7 @@ depends=(
     'gnome-session'
     'gnome-keyring'
     'gnome-tweaks'
+    'gnome-extensions-app'      # gestor gráfico nativo de extensiones GNOME
     'gnome-browser-connector'    # para extensions.gnome.org
     'gnome-software'
     'gnome-system-monitor'

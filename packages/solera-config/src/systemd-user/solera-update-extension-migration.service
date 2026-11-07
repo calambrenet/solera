@@ -1,0 +1,12 @@
+[Unit]
+Description=One-time migration for the Solera Update GNOME extension
+After=dbus.service
+Before=gnome-session.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/solera/solera-update-extension-migration
+RemainAfterExit=yes
+
+[Install]
+WantedBy=default.target

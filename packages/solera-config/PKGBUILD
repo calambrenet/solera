@@ -18,7 +18,7 @@
 
 pkgname=solera-config
 pkgver=26.04
-pkgrel=40
+pkgrel=41
 pkgdesc='Solera Linux defaults, branding and configuration overrides'
 arch=('any')
 url='https://github.com/calambrenet/solera'
@@ -98,6 +98,13 @@ package() {
     install -m644 src/dconf/db/05-wm            "$pkgdir/etc/dconf/db/solera.d/05-wm"
     install -m644 src/dconf/db/06-console       "$pkgdir/etc/dconf/db/solera.d/06-console"
     install -m644 src/dconf/db/07-blur-my-shell "$pkgdir/etc/dconf/db/solera.d/07-blur-my-shell"
+
+    # systemd --user inherits the graphical login environment. Keep native
+    # Python/GTK applications ahead of Homebrew's Python for D-Bus activation,
+    # while preserving the rest of the user's PATH.
+    install -d "$pkgdir/etc/environment.d"
+    install -m644 src/environment.d/10-solera-path.conf \
+        "$pkgdir/etc/environment.d/10-solera-path.conf"
 
     # ---- dconf perfil GDM (logo, banner, fondo del greeter) ---------------
     # El perfil 'gdm' es el del usuario virtual de GDM. /etc/dconf/profile/gdm
@@ -227,6 +234,19 @@ package() {
     install -d "$pkgdir/usr/libexec/solera"
     install -m755 src/flatpak/solera-first-boot \
         "$pkgdir/usr/libexec/solera/solera-first-boot"
+
+    # ---- One-time GNOME extension state migration --------------------------
+    install -d "$pkgdir/usr/libexec/solera"
+    install -m755 src/gnome/solera-update-extension-migration.py \
+        "$pkgdir/usr/libexec/solera/solera-update-extension-migration"
+    install -d "$pkgdir/usr/lib/systemd/user"
+    install -m644 src/systemd-user/solera-update-extension-migration.service \
+        "$pkgdir/usr/lib/systemd/user/solera-update-extension-migration.service"
+    # Enable for user managers declaratively; the per-user marker makes the
+    # migration one-shot across reboots and deployments.
+    install -d "$pkgdir/etc/systemd/user/default.target.wants"
+    ln -sf /usr/lib/systemd/user/solera-update-extension-migration.service \
+        "$pkgdir/etc/systemd/user/default.target.wants/solera-update-extension-migration.service"
 
     # ---- CLI `solera`: front-end de arkdep --------------------------------
     # `solera update` → `arkdep deploy` (despliega la última imagen),

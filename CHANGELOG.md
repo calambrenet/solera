@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to `YY.MM` versioning pinned to an
 [Arch Linux Archive](https://archive.archlinux.org/) snapshot.
 
+## [26.11.1] - 2026-11-07
+
+Corrective rebuild of 26.11 on the same Arch Linux Archive snapshot
+(`2026/11/06`).
+
+### Fixed
+
+- Include the native GNOME Extensions application in the default installed
+  system image.
+- Put system executables ahead of Homebrew in the systemd user-service `PATH`
+  while retaining Homebrew, so GNOME Tweaks resolves the system Python and
+  PyGObject when launched from the desktop.
+- Migrate existing users from an obsolete per-user Solera Update extension
+  copy and stale disabled state. The migration keeps a backup, preserves other
+  extension preferences, and runs only once so users can disable the indicator
+  afterward.
+
 ## [26.11] - 2026-11-07
 
 Monthly refresh: the image and the installer ISO rebuilt against a newer Arch
@@ -443,7 +460,9 @@ Initial public alpha. Tag: `v0.1.0-alpha`. First commit with project skeleton.
 - `solera-diseno-tecnico.md`: authoritative technical design document.
 - `docs-privados/inventario-maquina.md`: package inventory from the developer's machine.
 
-[Unreleased]: https://github.com/calambrenet/solera/compare/v26.09...HEAD
+[Unreleased]: https://github.com/calambrenet/solera/compare/v26.11.1...HEAD
+[26.11.1]: https://github.com/calambrenet/solera/compare/v26.11...v26.11.1
+[26.11]: https://github.com/calambrenet/solera/compare/v26.09.3...v26.11
 [26.09]: https://github.com/calambrenet/solera/compare/v26.08...v26.09
 [26.06.1]: https://github.com/calambrenet/solera/compare/v26.06...v26.06.1
 [26.06]: https://github.com/calambrenet/solera/compare/v0.1.0-alpha...v26.06
